@@ -81,6 +81,9 @@ def url(file, width=640):
 
 def refresh(db, force=False):
     """Caută poze pentru destinațiile care nu au încă. Întoarce câte s-au găsit acum."""
+    import os
+    if os.environ.get("FCH_CLOUD"):
+        sync_from_site(db)
     have = {} if force else (db.get_kv("photos") or {})
     tried = set() if force else set(db.get_kv("photos_tried") or [])
     codes = sorted({r["dest"] for r in db.q("SELECT DISTINCT dest FROM fares")} - set(have) - tried)
@@ -349,8 +352,84 @@ OVERRIDES = {**EMBLEMATIC, "CDG": _PARIS, "ORY": _PARIS, "BVA": _PARIS, "PAR": _
 
 
 def public(db):
-    """{cod: fișier} pentru site."""
-    return {**(db.get_kv("photos") or {}), **OVERRIDES}
+    """{cod: fișier} pentru site. Pozele alese de tine în pagina „Poze” (kv photo_custom) au prioritate."""
+    return {**(db.get_kv("photos") or {}), **OVERRIDES, **(db.get_kv("photo_custom") or {})}
+
+
+def sync_from_site(db):
+    """În cloud: preia pozele de pe site-ul publicat de laptop, ca alegerile tale să nu se piardă."""
+    try:
+        data = net.get_json("https://flycenterhub.github.io/data/photos.json", headers=UA, timeout=30)
+        if isinstance(data, dict) and len(data) > 100:
+            db.set_kv("photo_custom", data)
+    except Exception as e:
+        log.warning("Poze de pe site: %s", e)
+
+
+# ---------- pagina „Poze” (doar pe laptop): verifici și schimbi poza fiecărei destinații ----------
+COMMONS = "https://commons.wikimedia.org/w/api.php"
+
+
+def parse_file(text):
+    """Link Wikimedia Commons (pagina pozei sau adresa imaginii) sau numele fișierului -> numele fișierului."""
+    t = urllib.parse.unquote((text or "").strip())
+    m = re.search(r"(?:File|Fișier|Datei|Fichier|Archivo|Plik):([^?#]+)", t, re.I)
+    if m:
+        t = m.group(1)
+    elif "upload.wikimedia.org" in t:
+        parts = t.split("?")[0].split("/")
+        t = parts[-2] if "/thumb/" in t else parts[-1]
+    return t.strip().replace(" ", "_")
+
+
+def file_info(file):
+    """Verifică pe Commons că fișierul există și e fotografie. Întoarce {file, thumb} sau None."""
+    q = (f"{COMMONS}?action=query&format=json&prop=imageinfo&iiprop=url|mime&iiurlwidth=500&titles="
+         + urllib.parse.quote("File:" + file))
+    pages = net.get_json(q, headers=UA)["query"]["pages"]
+    for p in pages.values():
+        ii = (p.get("imageinfo") or [{}])[0]
+        if "missing" in p or ii.get("mime") not in ("image/jpeg", "image/png", "image/webp"):
+            return None
+        return {"file": p["title"][5:].replace(" ", "_"), "thumb": ii.get("thumburl") or ii.get("url")}
+    return None
+
+
+def search(query, limit=24):
+    """Caută fotografii pe Wikimedia Commons (libere, gratuite)."""
+    q = (f"{COMMONS}?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit={limit}"
+         f"&gsrsearch={urllib.parse.quote(query + ' filetype:bitmap')}&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=400")
+    pages = (net.get_json(q, headers=UA).get("query") or {}).get("pages", {})
+    out = []
+    for p in sorted(pages.values(), key=lambda x: x.get("index", 0)):
+        ii = (p.get("imageinfo") or [{}])[0]
+        if ii.get("mime") == "image/jpeg" and ii.get("width", 0) >= 800 and not BAD.search(p["title"]):
+            out.append({"file": p["title"][5:].replace(" ", "_"), "thumb": ii.get("thumburl")})
+    return out
+
+
+def set_custom(db, code, file):
+    """Salvează poza aleasă pentru o destinație ('' = revine la poza automată)."""
+    custom = db.get_kv("photo_custom") or {}
+    if file:
+        custom[code] = file
+    else:
+        custom.pop(code, None)
+    db.set_kv("photo_custom", custom)
+
+
+def admin_list(db):
+    """Toate destinațiile, cu poza actuală și de unde vine."""
+    auto, custom = db.get_kv("photos") or {}, db.get_kv("photo_custom") or {}
+    names = {p["code"]: (p["name"], p["country"]) for p in db.q("SELECT code, name, country FROM places")}
+    rows = []
+    for r in db.q("SELECT dest, COUNT(*) AS n FROM fares GROUP BY dest ORDER BY n DESC"):
+        c = r["dest"]
+        f = custom.get(c) or OVERRIDES.get(c) or auto.get(c)
+        src = "aleasă de tine" if c in custom else "emblematică" if c in OVERRIDES else "automată" if f else "fără poză"
+        name, country = names.get(c, (c, ""))
+        rows.append({"code": c, "name": name or c, "country": country or "", "zboruri": r["n"], "file": f, "src": src})
+    return rows
 
 
 if __name__ == "__main__":
