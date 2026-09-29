@@ -73,6 +73,11 @@ def build(engine):
     status = queries.status(engine)
     status.update(running=False, progress=[], progress_pct=None, eta_min=None, telegram=False, serpapi={"enabled": False},
                   static=True, generated_at=now_str())
+    # cine a publicat: laptopul sau GitHub (cloud-ul scanează doar cât laptopul e oprit, vezi cloud_run.py)
+    if os.environ.get("FCH_CLOUD"):
+        status.update(publisher="cloud", laptop_last=os.environ.get("FCH_LAPTOP_LAST", ""))
+    else:
+        status.update(publisher="laptop", laptop_last=now_str())
     exotic = queries.exotic(db, cfg, engine.source_enabled(cfg, "aviasales"))
 
     files = {
