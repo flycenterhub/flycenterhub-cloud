@@ -132,6 +132,11 @@ class Engine:
             status = "ok" if ok and not errors else ("partial" if ok else "error")
             if ok:
                 info["alerts"] = self.send_deal_alerts(cfg, deals)
+                try:  # poze pentru destinațiile noi (Wikimedia Commons)
+                    from . import photos
+                    photos.refresh(self.db)
+                except Exception as e:
+                    log.warning("Poze: %s", e)
                 # scanare pornită din butoane: publică imediat; automată: cel mult o dată la N minute
                 threading.Thread(target=self.publish_site, args=(manual,), daemon=True).start()
             self.db.finish_scan(scan_id, status, info)

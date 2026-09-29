@@ -11,7 +11,7 @@ import json
 import logging
 import os
 
-from . import config, fx, net, queries
+from . import config, fx, net, photos, queries
 from .db import now_str
 from .fmt import ORIGIN_NAMES, country_ro
 from .regions import region_of
@@ -90,6 +90,7 @@ def build(engine):
         "data/posts.json": _j(queries.posts(db)),
         "data/fares.json": _j({"airlines": airlines, "rows": compact}),
         "data/places.json": _j(places),
+        "data/photos.json": _j(photos.public(db)),
         "data/stats.json": _j(stats),
         "data/hist.json": _j(hist),
         "data/exotic_posts.json": _j(exotic["posts"]),

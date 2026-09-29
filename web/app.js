@@ -738,6 +738,7 @@ function flightCard(r, opts = {}) {
                r.prev_price_eur ? `era ${eur(r.prev_price_eur)}` : ""].filter(Boolean).join(" · ");
   favRows.set(favKey(r), r);
   return `<article class="card fc${opts.dim ? " dim" : ""}">
+    ${fcPhoto(r)}
     <div class="fc-head">
       <div class="fc-route">${esc(r.origin_name)}<span class="arrow">→</span>${esc(r.dest_name)}</div>
       <div class="fc-head-r">${r.discount_pct >= 5 ? `<span class="fc-disc num" title="${esc(sub)}">−${Math.round(r.discount_pct)}%</span>` : ""}${favBtn(r)}</div>
@@ -976,7 +977,19 @@ async function loadStatus() {
     $("#status").classList.add("err");
   }
 }
+// Poze cu orașele (Wikimedia Commons): {cod aeroport: fișier}
+let PHOTOS = {};
+const photosP = api("/api/photos").then(p => { PHOTOS = p || {}; }).catch(() => {});
+function photoOf(code) { return PHOTOS[code]; }
+function fcPhoto(r) {
+  const f = photoOf(r.dest);
+  if (!f) return "";
+  const src = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=500`;
+  return `<div class="fc-photo"><img src="${src}" alt="${esc(r.dest_name)}" loading="lazy" decoding="async" onerror="this.parentNode.remove()">` +
+    `<a class="fc-credit" href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(f)}" target="_blank" rel="noopener" title="Foto: Wikimedia Commons (licență liberă) — vezi autorul">©</a></div>`;
+}
 async function loadData() {
+  await photosP;
   const [deals, lm, dest, posts] = await Promise.all([
     api(`/api/deals${exactQ()}`), api(`/api/lastminute?days=${state.days}${exactQ("&")}`), api(`/api/destinations${exactQ()}`), api("/api/posts"),
   ]);

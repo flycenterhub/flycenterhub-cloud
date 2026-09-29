@@ -54,6 +54,9 @@ def make_handler(engine):
             try:
                 if u.path == "/api/status":
                     return self._json(queries.status(engine))
+                if u.path == "/api/photos":
+                    from . import photos
+                    return self._json(photos.public(db))
                 if u.path == "/api/deals":
                     return self._json(queries.deals(db, cfg["origins"], exact))
                 if u.path == "/api/route-deals":

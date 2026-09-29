@@ -613,3 +613,12 @@ button.btn.book{font:inherit;cursor:pointer}
 
 .fav-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 4px 2px 14px; font-size: 13.5px; color: var(--text-2); }
 .fav-list .fc-actions { grid-template-columns: 1fr; grid-auto-flow: column; grid-auto-columns: auto; }
+
+/* poze cu orașele pe carduri */
+.fc-photo { position: relative; margin: -16px -16px 6px; height: 132px; border-radius: 16px 16px 0 0; overflow: hidden; background: var(--line, #eee); }
+.fc-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s; }
+.card.fc:hover .fc-photo img { transform: scale(1.04); }
+.fc-credit { position: absolute; right: 6px; bottom: 5px; font-size: 11px; line-height: 1; padding: 3px 5px; border-radius: 6px;
+  background: rgba(0,0,0,.45); color: #fff; text-decoration: none; opacity: .75; }
+.fc-credit:hover { opacity: 1; }
+@media (max-width: 640px) { .fc-photo { height: 120px; } }
