@@ -14,20 +14,25 @@ log = logging.getLogger("photos")
 
 SPARQL = "https://query.wikidata.org/sparql"
 UA = {"User-Agent": "FlyCenterHub/1.0 (https://flycenterhub.github.io/)", "Accept": "application/sparql-results+json"}
-BAD = re.compile(r"map|karte|carte|satellite|landsat|nasa|locator|location|flag|coat.of.arms|wappen|logo|\.svg$|\.png$|\.gif$|\.tif", re.I)
+BAD = re.compile(r"map|karte|carte|satellite|landsat|nasa|locator|location|flag|coat.of.arms|wappen|logo|"
+                 r"collage|montage|montaje|montagem|composite|mosaic|compilation|kola[zž]|\.svg$|\.png$|\.gif$|\.tif", re.I)
 
 
-def _query(codes):
+def _query(codes, want=None):
+    want = want or {}
     vals = " ".join(f'"{c}"' for c in codes)
-    q = f"""SELECT ?iata ?img ?banner ?aimg WHERE {{
+    q = f"""SELECT ?iata ?img ?banner ?cc WHERE {{
       VALUES ?iata {{ {vals} }}
       ?a wdt:P238 ?iata .
-      OPTIONAL {{ ?a wdt:P931 ?city . OPTIONAL {{ ?city wdt:P18 ?img }} OPTIONAL {{ ?city wdt:P948 ?banner }} }}
+      OPTIONAL {{ ?a wdt:P931 ?city . OPTIONAL {{ ?city wdt:P18 ?img }} OPTIONAL {{ ?city wdt:P948 ?banner }}
+                 OPTIONAL {{ ?city wdt:P17/wdt:P297 ?cc }} }}
     }}"""
     data = net.get_json(f"{SPARQL}?format=json&query={urllib.parse.quote(q)}", headers=UA, timeout=90)
     out = {}
     for b in data["results"]["bindings"]:
         code = b["iata"]["value"]
+        if want.get(code) and "cc" in b and b["cc"]["value"].upper() != want[code].upper():
+            continue  # orașul „deservit” e în altă țară decât aeroportul: legătură greșită pe Wikidata
         for key in ("img", "banner"):
             if key in b:
                 f = urllib.parse.unquote(b[key]["value"].rsplit("/", 1)[-1]).replace(" ", "_")
@@ -79,11 +84,12 @@ def refresh(db, force=False):
     have = {} if force else (db.get_kv("photos") or {})
     tried = set() if force else set(db.get_kv("photos_tried") or [])
     codes = sorted({r["dest"] for r in db.q("SELECT DISTINCT dest FROM fares")} - set(have) - tried)
+    ccs = {p["code"]: p["cc"] for p in db.q("SELECT code, cc FROM places")}
     found = 0
     for i in range(0, len(codes), 150):
         part = codes[i:i + 150]
         try:
-            res = _query(part)
+            res = _query(part, ccs)
         except Exception as e:
             log.warning("Poze Wikidata: %s", e)
             break
