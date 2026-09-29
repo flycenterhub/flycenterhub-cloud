@@ -1,0 +1,48 @@
+name: Scanare FlyCenterHub
+on:
+  schedule:
+    - cron: "17 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Scanează chiar dacă laptopul e pornit"
+        type: boolean
+        default: false
+concurrency:
+  group: scan
+  cancel-in-progress: false
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    env:
+      TZ: Europe/Bucharest
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Istoricul prețurilor
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: fch-db-${{ github.run_id }}
+          restore-keys: fch-db-
+      - name: Setări (din Secrets)
+        run: printf '%s' "$CONFIG_JSON" > config.json
+        env:
+          CONFIG_JSON: ${{ secrets.CONFIG_JSON }}
+      - name: Scanare
+        run: python cloud_run.py
+        env:
+          FCH_FORCE: ${{ inputs.force }}
+      - name: Șterge setările
+        if: always()
+        run: rm -f config.json
+      - name: Salvează istoricul
+        if: always() && hashFiles('data/zboruri.db') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: data
+          key: fch-db-${{ github.run_id }}
