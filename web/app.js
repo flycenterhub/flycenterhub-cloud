@@ -306,63 +306,106 @@ function freshness(r) {
   }
   return ts ? `<div class="fresh">${checkedLabel(ts)} direct la ${esc(srcName(src))}</div>` : "";
 }
+// rezultatul verificării — modelul „card cu iconiță”: antet (iconiță + titlu + sursă/oră), preț mare, locuri rămase
+const VR_ICONS = {
+  good: '<path d="M5 12.5l4.2 4.2L19 7"/>',
+  down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  bad: '<path d="M7 7l10 10M17 7L7 17"/>',
+  warn: '<path d="M12 7.5v6"/><path d="M12 16.8v.2"/>',
+};
+function vrIcon(kind) {
+  if (kind === "loading") return `<span class="vr-ico loading"><span class="vr-spin"></span></span>`;
+  return `<span class="vr-ico ${kind}"><svg viewBox="0 0 24 24" aria-hidden="true">${VR_ICONS[kind] || VR_ICONS.warn}</svg></span>`;
+}
+function vrBox(res, kind, title, sub = "", body = "") {
+  const tone = kind === "down" ? "good" : kind === "up" ? "warn" : kind;
+  res.className = `verify-res vr ${tone}`;
+  res.innerHTML = `<div class="vr-head">${vrIcon(kind)}<div class="vr-hd"><div class="vr-title">${esc(title)}</div>` +
+    `${sub ? `<div class="vr-sub">${esc(sub)}</div>` : ""}</div></div>${body}`;
+}
+function vrPrice(eurV, ronV, old, note = "") {
+  let delta = "";
+  if (old != null && Math.abs(eurV - old) >= 0.01) {
+    const d = eurV - old;
+    delta = `<span class="vr-delta ${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${eur(Math.abs(d))}</span>`;
+  }
+  return `<div class="vr-price"><span class="vr-amount">${eur(eurV)}</span>${ronV != null ? `<span class="vr-lei">${fmtLei(ronV)}</span>` : ""}` +
+    `${old != null ? `<s class="vr-old">${eur(old)}</s>` : ""}${delta}</div>${note ? `<div class="vr-note">${note}</div>` : ""}`;
+}
 function verifyExtra(r) {
   const out = [];
   if (r.seats != null) {
-    const s = r.seats >= (r.seats_max || 9) ? `${r.seats_max || 9}+ locuri` : r.seats === 1 ? "doar 1 loc" : `doar ${r.seats} locuri`;
-    out.push(`<div class="v-line${r.seats <= 3 ? " v-warn" : ""}">💺 Mai sunt ${s} la acest preț${r.seats < (r.seats_max || 9) ? " (după aceea prețul crește)" : ""}</div>`);
+    const max = r.seats_max || 9, n = Math.min(r.seats, max), few = r.seats <= 3;
+    const txt = r.seats >= max ? `${max}+ locuri la acest preț` : r.seats === 1 ? "Ultimul loc la acest preț" : `Doar ${r.seats} locuri la acest preț`;
+    const bars = Array.from({ length: max }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("");
+    out.push(`<div class="vr-seats${few ? " few" : ""}" title="${r.seats < max ? "După ce se ocupă aceste locuri, prețul crește" : "Sunt suficiente locuri la acest preț"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V6.5A2.5 2.5 0 0 1 9.5 4h5A2.5 2.5 0 0 1 17 6.5V11"/><path d="M4 12.5a2 2 0 0 1 4 0V15h8v-2.5a2 2 0 0 1 4 0V19H4z"/><path d="M6 19v2M18 19v2"/></svg>` +
+      `<span class="vr-seats-t">${txt}</span><span class="vr-meter" title="${r.seats >= max ? max + "+" : r.seats} din ${max}">${bars}</span></div>`);
   }
   if ((r.pax || 1) > 1 && r.pax_total_eur != null) {
     const more = r.pax_price_eur > r.price_eur + 0.01;
-    out.push(`<div class="v-line${more ? " v-warn" : ""}">👥 ${r.pax} locuri (${esc(paxLabel())}): total <b>${eur(r.pax_total_eur)}</b> · ${fmtLei(r.pax_total_ron)}${more
-      ? ` · la ${eur(r.price_eur)} nu mai sunt ${r.pax} locuri, pentru grup prețul e ${eur(r.pax_price_eur)}/pers.` : " · sunt locuri pentru toți la acest preț"}</div>`);
+    out.push(`<div class="vr-group${more ? " few" : ""}"><span>Total pentru ${r.pax} persoane</span><b>${eur(r.pax_total_eur)}</b><span class="vr-lei">${fmtLei(r.pax_total_ron)}</span>` +
+      `${more ? `<div class="vr-note">La ${eur(r.price_eur)} nu mai sunt ${r.pax} locuri: pentru grup prețul e ${eur(r.pax_price_eur)} de persoană.</div>` : ""}</div>`);
   }
   return out.join("");
 }
-async function runGfCheck(btn) {
-  const box = btn.closest(".card, tr, .list-row");
+// unde apare rezultatul verificării: în card, sau pe un rând propriu sub zborul din tabel
+function resBox(btn) {
+  const tr = btn.closest("tr");
+  if (tr) {
+    let next = tr.nextElementSibling;
+    if (!next || !next.classList.contains("vr-row")) {
+      next = document.createElement("tr");
+      next.className = "vr-row";
+      next.innerHTML = `<td colspan="${tr.children.length}"><div class="verify-res"></div></td>`;
+      tr.after(next);
+    }
+    return next.querySelector(".verify-res");
+  }
+  const box = btn.closest(".card, .list-row");
   let res = box.querySelector(".verify-res");
-  if (!res) { res = document.createElement("div"); res.className = "verify-res"; (btn.closest("td") || box).appendChild(res); }
+  if (!res) { res = document.createElement("div"); res.className = "verify-res"; box.appendChild(res); }
+  return res;
+}
+async function runGfCheck(btn) {
+  const res = resBox(btn);
   const iconBtn = btn.classList.contains("fc-icon"), iconTxt = btn.textContent;
   btn.disabled = true; btn.textContent = iconBtn ? "…" : "Caut pe Google Flights…";
-  res.className = "verify-res"; res.textContent = "Caut prețul real pe Google Flights…";
+  vrBox(res, "loading", "Se verifică prețul", "pe Google Flights…");
   try {
     const r = await fetch("/api/gfcheck", { method: "POST", headers: { "X-Zboruri": "1", "Content-Type": "application/json" },
       body: btn.dataset.gfcheck }).then(x => x.json());
     const now = new Date().toTimeString().slice(0, 5);
-    if (!r.ok) { res.className = "verify-res warn"; res.textContent = r.error === "no_key" ? "Adaugă cheia SerpApi în config.json ca să verifici prețurile reale." : `Nu am putut verifica: ${r.error || "eroare"}`; }
-    else if (!r.found) { res.className = "verify-res bad"; res.textContent = `❌ Verificat la ${now}: Google Flights nu are zboruri pe această rută și dată.`; }
+    if (!r.ok) vrBox(res, "warn", "Nu am putut verifica acum", r.error === "no_key" ? "Adaugă cheia SerpApi în config.json" : "Încearcă din nou peste un minut");
+    else if (!r.found) vrBox(res, "bad", "Zbor indisponibil", `Google Flights · acum ${now}`, `<div class="vr-note">Nu există zboruri pe această rută și dată.</div>`);
     else {
-      res.className = "verify-res good";
-      res.innerHTML = `✅ Preț real pe Google Flights (${now}): <b>${eur(r.price_eur)}</b>/pers. · ${esc(r.airline)} ` +
-        `<a class="btn small book" href="${esc(r.url)}" target="_blank" rel="noopener">Rezervă ↗</a>` +
-        `<div class="v-line muted">Căutări SerpApi folosite luna aceasta: ${r.used}/${r.limit}</div>`;
+      vrBox(res, "good", "Preț real confirmat", `Google Flights · acum ${now}`,
+        vrPrice(r.price_eur, null, null, `de persoană${r.airline ? " · " + esc(r.airline) : ""} · căutări folosite: ${r.used}/${r.limit}`) +
+        `<a class="btn small book vr-book" href="${esc(r.url)}" target="_blank" rel="noopener">Rezervă ↗</a>`);
       setTimeout(loadData, 2500);
     }
-  } catch (e) { res.className = "verify-res warn"; res.textContent = "Aplicația nu a răspuns. E pornită?"; }
+  } catch (e) { vrBox(res, "warn", "Aplicația nu a răspuns", "Verifică dacă e pornită"); }
   btn.disabled = false; btn.textContent = iconBtn ? iconTxt : "✅ Verifică din nou";
 }
 async function runVerify(btn) {
   const box = btn.closest(".card, tr, .list-row");
-  let res = box.querySelector(".verify-res");
-  if (!res) {
-    res = document.createElement("div");
-    res.className = "verify-res";
-    (btn.closest("td") || box).appendChild(res);
-  }
+  const res = resBox(btn);
+  const legs = JSON.parse(btn.dataset.verify);
+  const who = legs.every(l => l.source === legs[0].source) ? srcName(legs[0].source) : "companii";
   const iconBtn = btn.classList.contains("fc-icon"), iconTxt = btn.textContent;
   btn.disabled = true; btn.textContent = iconBtn ? "…" : "Se verifică…";
-  res.className = "verify-res"; res.textContent = "Întreb compania…";
+  vrBox(res, "loading", "Se verifică prețul", `direct la ${who}…`);
   try {
-    const r = STATIC ? await window.staticVerify(JSON.parse(btn.dataset.verify), seats()) : await fetch("/api/verify", {
+    const r = STATIC ? await window.staticVerify(legs, seats()) : await fetch("/api/verify", {
       method: "POST", headers: { "X-Zboruri": "1", "Content-Type": "application/json" },
-      body: JSON.stringify({ legs: JSON.parse(btn.dataset.verify), pax: seats() }),
+      body: JSON.stringify({ legs, pax: seats() }),
     }).then(x => x.json());
     const now = new Date().toTimeString().slice(0, 5);
+    const sub = `la ${who} · acum ${now}`;
     if (!r.ok) {
-      res.className = "verify-res warn"; res.textContent = "Nu am putut verifica acest bilet acum. Încearcă din nou peste un minut.";
+      vrBox(res, "warn", "Nu am putut verifica acum", "Încearcă din nou peste un minut");
     } else if (!r.available) {
-      res.className = "verify-res bad"; res.textContent = `❌ Verificat la ${now}: zborul nu mai e disponibil la această dată.`;
+      vrBox(res, "bad", "Zbor indisponibil", sub, `<div class="vr-note">Nu mai sunt locuri la această dată.</div>`);
     } else {
       const pEl = box.querySelector(".price, .strong, .list-row .p");
       const leiEl = box.querySelector(".lei");
@@ -370,19 +413,17 @@ async function runVerify(btn) {
       else if (pEl) pEl.textContent = eur(r.price_eur);
       if (leiEl) leiEl.textContent = fmtLei(r.price_ron) + (r.lei_exact ? " ✓" : "");
       const fresh = box.querySelector(".fresh");
-      if (fresh) fresh.textContent = `✓ ${now}`;
+      if (fresh) fresh.textContent = `✓ verificat acum la ${now}`;
       const extra = verifyExtra(r);
       if (r.changed && r.old_price_eur != null) {
         const up = r.price_eur > r.old_price_eur;
-        res.className = "verify-res " + (up ? "warn" : "good");
-        res.innerHTML = esc(`${up ? "⚠️ S-a scumpit" : "🎉 S-a ieftinit"}: acum ${eur(r.price_eur)} · ${fmtLei(r.price_ron)} (era ${eur(r.old_price_eur)}). Verificat la ${now}.`) + extra;
+        vrBox(res, up ? "up" : "down", up ? "Prețul a crescut" : "Prețul a scăzut", sub, vrPrice(r.price_eur, r.price_ron, r.old_price_eur) + extra);
       } else {
-        res.className = "verify-res good";
-        res.innerHTML = esc(`✅ Verificat la ${now} direct la companie: ${eur(r.price_eur)} · ${fmtLei(r.price_ron)}, preț neschimbat.`) + extra;
+        vrBox(res, "good", "Preț confirmat", sub, vrPrice(r.price_eur, r.price_ron, null, "Prețul e același ca pe platformă") + extra);
       }
     }
   } catch (e) {
-    res.className = "verify-res warn"; res.textContent = "Aplicația nu a răspuns. E pornită?";
+    vrBox(res, "warn", "Aplicația nu a răspuns", "Verifică dacă e pornită");
   }
   btn.disabled = false; btn.textContent = iconBtn ? iconTxt : "🔄 Verifică din nou";
 }
@@ -792,8 +833,8 @@ function renderLM() {
       <td class="r num m-price" data-label="Preț"><span class="strong">${eur(r.price_eur)}</span><br><span class="muted" style="font-size:12px">${fmtLei(r.price_ron)}</span>${seats() > 1 ? `<br><span style="font-size:12px">👥 ${seats()} locuri: <b>${eur(r.price_eur * seats())}</b></span>` : ""}</td>
       <td class="r num" data-label="vs. obișnuit">${r.discount_pct == null ? "–" : r.discount_pct > 0 ? `<span style="color:var(--good-text);font-weight:700">−${Math.round(r.discount_pct)}%</span>` : `<span class="muted">+${Math.round(-r.discount_pct)}%</span>`}</td>
       <td class="muted" data-label="Companie">${esc(r.airline || "")}${unverified(r) ? ` · <span class="unv-text">🔎 de verificat</span>` : ""}</td>
-      <td class="m-actions">${(favRows.set(favKey(r), r), favBtn(r))} ${bookBtn(r.link || r.gf_link, r.airline)} ${verifyBtn(r)}
-        <div class="muted" style="font-size:11px;margin-top:3px">${r.source === "aviasales" ? "🔎 preț găsit recent, de verificat" : checkedLabel(r.last_seen)}</div></td>
+      <td class="m-actions"><div class="row-actions">${(favRows.set(favKey(r), r), favBtn(r))}${bookBtn(r.link || r.gf_link, r.airline)}${verifyBtn(r)}</div>
+        <div class="fresh row-checked">${r.source === "aviasales" ? "🔎 preț găsit recent, de verificat" : checkedLabel(r.last_seen)}</div></td>
     </tr>`).join("")}</tbody></table></div>`;
 }
 
@@ -1352,5 +1393,10 @@ $("#btn-theme").addEventListener("click", () => {
   setTab(state.tab);
   loadStatus().then(() => { if (!state.lastScanId) loadData(); });
   if (STATIC) { $("#btn-scan").hidden = true; $("#btn-quick").hidden = true; }
+  else {  // doar pe laptop: pagina în care alegi pozele destinațiilor
+    const a = document.createElement("a");
+    a.href = "poze.html"; a.className = "btn small ghost"; a.textContent = "🖼 Poze"; a.title = "Verifică și schimbă pozele destinațiilor";
+    $("#btn-theme").before(a);
+  }
   setInterval(loadStatus, STATIC ? 60000 : 8000);
 })();

@@ -264,11 +264,55 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 /* Verificare live și ora verificării */
 .fresh { font-size: 12px; color: var(--muted); }
 .fresh.warn { color: var(--hot-text); }
-.verify-res { font-size: 13px; font-weight: 600; padding: 6px 9px; border-radius: 8px; background: var(--surface-2); color: var(--text-2); margin-top: 4px; }
-.verify-res.good { background: var(--good-soft); color: var(--good-text); }
-.verify-res.warn { background: var(--hot-soft); color: var(--hot-text); }
-.verify-res.bad { background: var(--hot-soft); color: var(--new); }
-td .verify-res { white-space: normal; max-width: 280px; }
+/* rezultatul verificării prețului — card cu iconiță */
+.verify-res.vr { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; padding: 12px 14px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 500; line-height: 1.4;
+  white-space: normal; overflow-wrap: anywhere; min-width: 0; max-width: 100%; box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04); animation: vr-in .25s ease-out; }
+@keyframes vr-in { from { opacity: 0; transform: translateY(-3px); } }
+.vr-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.vr-hd { min-width: 0; }
+.vr-ico { width: 34px; height: 34px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2); color: var(--text-2); }
+.vr-ico svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.vr-ico.good, .vr-ico.down { background: var(--good-soft); color: var(--good-text); }
+.vr-ico.up, .vr-ico.warn { background: var(--hot-soft); color: var(--hot-text); }
+.vr-ico.bad { background: var(--hot-soft); color: var(--new); }
+.vr-ico.loading { background: var(--accent-soft); }
+.vr-spin { width: 16px; height: 16px; border-radius: 50%; border: 2.4px solid var(--accent); border-right-color: transparent; animation: vr-rot .8s linear infinite; }
+@keyframes vr-rot { to { transform: rotate(360deg); } }
+.vr-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.vr-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.vr-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; font-variant-numeric: tabular-nums; }
+.vr-amount { font-size: 24px; font-weight: 800; letter-spacing: -.01em; color: var(--text); }
+.vr-lei { font-size: 13px; color: var(--text-2); }
+.vr-old { font-size: 13px; color: var(--muted); }
+.vr-delta { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.vr-delta.down { background: var(--good-soft); color: var(--good-text); }
+.vr-delta.up { background: var(--hot-soft); color: var(--hot-text); }
+.vr-note { font-size: 12px; color: var(--text-2); margin-top: -4px; }
+.vr-seats { display: flex; align-items: center; gap: 7px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 600; }
+.vr-seats svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.vr-seats-t { flex: 1; min-width: 0; }
+.vr-seats.few { background: #faeeda; color: #633806; }
+.vr-meter { display: inline-flex; gap: 1.5px; flex: none; }
+.vr-meter i { width: 3px; height: 11px; border-radius: 2px; background: currentColor; opacity: .18; }
+.vr-meter i.on { opacity: .85; }
+.vr-group { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 12.5px; color: var(--text-2); }
+.vr-group b { font-size: 15px; color: var(--text); }
+.vr-group .vr-note { flex-basis: 100%; margin-top: 0; }
+.vr-group.few .vr-note { color: var(--hot-text); }
+.vr-book { align-self: flex-start; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .vr-seats.few { background: #412402; color: #FAC775; } }
+:root[data-theme="dark"] .vr-seats.few { background: #412402; color: #FAC775; }
+td .verify-res { white-space: normal; max-width: 100%; }
+td.m-actions { white-space: nowrap; vertical-align: middle; }
+tr.vr-row td { padding: 0 12px 12px; border-bottom: 1px solid var(--border); }
+tr.vr-row .verify-res { margin-top: 0; max-width: 520px; margin-left: auto; }
+tr:has(+ tr.vr-row) td { border-bottom: none; }
+.row-actions { display: flex; align-items: center; gap: 6px; }
+.row-actions .fav-btn { margin-right: 0; }
+.row-checked { margin-top: 6px; font-size: 11.5px; }
 
 /* Compară live pe alte motoare de căutare */
 .compare { font-size: 12px; color: var(--text-2); line-height: 1.7; }
@@ -622,3 +666,14 @@ button.btn.book{font:inherit;cursor:pointer}
   background: rgba(0,0,0,.45); color: #fff; text-decoration: none; opacity: .75; }
 .fc-credit:hover { opacity: 1; }
 @media (max-width: 640px) { .fc-photo { height: 120px; } }
+
+/* tabelul Last minute încape pe ecran: destinația și data se pot rupe pe două rânduri */
+#tab-lm td.m-title, #tab-lm td[data-label="Când"] { white-space: normal; min-width: 150px; }
+#tab-lm td[data-label="Când"] .muted { white-space: nowrap; }
+@media (max-width: 700px) {
+  /* pe telefon, rezultatul verificării face corp comun cu zborul de deasupra */
+  .table-wrap.stack tr:has(+ tr.vr-row) { border-bottom: none; border-radius: 12px 12px 0 0; margin-bottom: 0; padding-bottom: 4px; }
+  .table-wrap.stack tr.vr-row { border-top: none; border-radius: 0 0 12px 12px; padding: 0 12px 12px; }
+  .table-wrap.stack tr.vr-row td { padding: 0; border: none; }
+  .table-wrap.stack tr.vr-row .verify-res { max-width: none; }
+}
