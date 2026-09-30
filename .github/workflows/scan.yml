@@ -11,6 +11,9 @@ on:
 concurrency:
   group: scan
   cancel-in-progress: false
+permissions:
+  contents: read
+  actions: write
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -46,3 +49,8 @@ jobs:
         with:
           path: data
           key: fch-db-${{ github.run_id }}
+      - name: Ține programarea activă (GitHub o oprește după 60 de zile fără commit-uri)
+        if: always()
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/scan.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}
