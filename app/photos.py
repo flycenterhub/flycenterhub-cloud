@@ -112,6 +112,10 @@ def refresh(db, force=False):
             log.warning("Poze după nume: %s", e)
     db.set_kv("photos", have)
     db.set_kv("photos_tried", sorted(tried))
+    try:
+        refresh_coords(db)
+    except Exception as e:
+        log.warning("Coordonate: %s", e)
     if codes:
         log.info("Poze destinații: %s noi (%s în total)", found, len(have))
     return found
@@ -350,6 +354,99 @@ EMBLEMATIC = {
 # Turnul Eiffel: varianta pe orizontală, se vede întreg pe card
 _PARIS = "La_Tour_Eiffel_vue_de_la_Tour_Saint-Jacques,_Paris_août_2014_(2).jpg"
 OVERRIDES = {**EMBLEMATIC, "CDG": _PARIS, "ORY": _PARIS, "BVA": _PARIS, "PAR": _PARIS}
+
+
+def _km(a, b):
+    import math
+    (lo1, la1), (lo2, la2) = a, b
+    p = math.pi / 180
+    h = math.sin((la2 - la1) * p / 2) ** 2 + math.cos(la1 * p) * math.cos(la2 * p) * math.sin((lo2 - lo1) * p / 2) ** 2
+    return 12742 * math.asin(math.sqrt(h))
+
+
+def _airline_coords(db):
+    """Coordonatele oficiale de la companii: Ryanair (lista lor de aeroporturi) și Wizz Air (harta lor de rute)."""
+    out = {}
+    try:
+        for a in net.get_json("https://www.ryanair.com/api/views/locate/5/airports/en/active", timeout=40):
+            c = a.get("coordinates") or {}
+            if a.get("code") and c.get("longitude") is not None:
+                out[a["code"]] = ([round(c["longitude"], 3), round(c["latitude"], 3)], "ryanair")
+    except Exception as e:
+        log.warning("Coordonate Ryanair: %s", e)
+    try:
+        from .sources import wizzair
+        api = wizzair.api_base(db)
+        for c in net.get_json(f"{api}/asset/map?languageCode=en-gb", headers=wizzair._headers(), timeout=40).get("cities", []):
+            if c.get("iata") and not c.get("isFakeStation") and c.get("longitude") is not None and c["iata"] not in out:
+                out[c["iata"]] = ([round(c["longitude"], 3), round(c["latitude"], 3)], "wizzair")
+    except Exception as e:
+        log.warning("Coordonate Wizz Air: %s", e)
+    return out
+
+
+# teritorii: pe Wikidata apar cu țara de care aparțin
+_SOVEREIGN = {"HK": "CN", "MO": "CN", "MQ": "FR", "GP": "FR", "PF": "FR", "RE": "FR", "GF": "FR", "NC": "FR", "YT": "FR",
+              "PR": "US", "VI": "US", "GU": "US", "NY": "CY", "CK": "NZ", "AW": "NL", "CW": "NL", "BQ": "NL", "SX": "NL",
+              "GL": "DK", "FO": "DK", "IC": "ES", "XK": "RS"}
+# coduri de oraș (nu sunt aeroporturi): folosim aeroportul principal al orașului
+_CITY_MAIN = {"NYC": "JFK", "ROM": "FCO", "LON": "LHR", "PAR": "CDG", "MIL": "MXP", "BUH": "OTP", "STO": "ARN", "MOW": "SVO",
+              "BJS": "PEK", "SHA": "PVG", "SEL": "ICN", "TYO": "HND", "OSA": "KIX", "RIO": "GIG", "SAO": "GRU", "BUE": "EZE",
+              "CHI": "ORD", "WAS": "IAD", "YTO": "YYZ", "YMQ": "YUL", "YEA": "YEG", "DTT": "DTW", "HOU": "IAH", "JKT": "CGK",
+              "BAK": "GYD", "REK": "KEF", "IZM": "ADB", "SIA": "XIY", "TCI": "TFS", "EAP": "BSL", "MMA": "MMX", "HDO": "DEL",
+              "GNO": "GNB", "ANK": "ESB", "UAQ": "UAQ"}
+
+
+def refresh_coords(db, force=False):
+    """Coordonatele aeroporturilor pentru harta cu prețuri: kv „coords” = {cod: [lon, lat]}, kv „coords_src” = {cod: sursă}.
+    Ordinea surselor: Ryanair și Wizz Air (oficiale), apoi Wikidata doar pentru restul, cu verificarea țării."""
+    have = {} if force else (db.get_kv("coords") or {})
+    src = {} if force else (db.get_kv("coords_src") or {})
+    codes = sorted({r["dest"] for r in db.q("SELECT DISTINCT dest FROM fares")}
+                   | {r["origin"] for r in db.q("SELECT DISTINCT origin FROM fares")})
+    missing = [c for c in codes if c not in have]
+    if not missing:
+        return have
+    airline = _airline_coords(db)
+    for c in missing:
+        if c in airline:
+            have[c], src[c] = airline[c]
+    main = {c: _CITY_MAIN[c] for c in missing if c in _CITY_MAIN}
+    for c, a in main.items():
+        if a in airline:
+            have[c], src[c] = airline[a][0], f"oraș ({a}, {airline[a][1]})"
+    rest = sorted({c for c in missing if c not in have and c not in main} | {a for c, a in main.items() if c not in have})
+    ccs = {p["code"]: (p["cc"] or "").upper() for p in db.q("SELECT code, cc FROM places")}
+    for i in range(0, len(rest), 150):
+        part = rest[i:i + 150]
+        vals = " ".join(f'"{c}"' for c in part)
+        q = f"""SELECT ?iata ?c ?cc WHERE {{ VALUES ?iata {{ {vals} }} ?a wdt:P238 ?iata . ?a wdt:P625 ?c .
+                 OPTIONAL {{ ?a wdt:P17/wdt:P297 ?cc }} FILTER NOT EXISTS {{ ?a wdt:P576 ?end }} }}"""
+        try:
+            data = net.get_json(f"{SPARQL}?format=json&query={urllib.parse.quote(q)}", headers=UA, timeout=90)
+        except Exception as e:
+            log.warning("Coordonate Wikidata: %s", e)
+            break
+        for b in data["results"]["bindings"]:
+            code = b["iata"]["value"]
+            if code in have:
+                continue
+            want = ccs.get(code)
+            if want and "cc" in b and b["cc"]["value"].upper() not in (want, _SOVEREIGN.get(want)):
+                continue  # aeroport cu același cod, dar din altă țară: nu e al nostru
+            m = re.match(r"Point\(([-\d.]+) ([-\d.]+)\)", b["c"]["value"])
+            if m:
+                have[code], src[code] = [round(float(m.group(1)), 3), round(float(m.group(2)), 3)], "wikidata"
+    for c, a in main.items():  # codurile de oraș, din aeroportul principal găsit pe Wikidata
+        if c not in have and a in have:
+            have[c], src[c] = have[a], f"oraș ({a}, {src.get(a)})"
+    db.set_kv("coords", have)
+    db.set_kv("coords_src", src)
+    return have
+
+
+def public_coords(db):
+    return db.get_kv("coords") or {}
 
 
 def public(db):

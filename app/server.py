@@ -57,6 +57,9 @@ def make_handler(engine):
                 if u.path == "/api/photos":
                     from . import photos
                     return self._json(photos.public(db))
+                if u.path == "/api/coords":
+                    from . import photos
+                    return self._json(photos.public_coords(db))
                 if u.path == "/api/photos-admin":
                     from . import photos
                     return self._json(photos.admin_list(db))

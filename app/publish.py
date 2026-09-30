@@ -91,6 +91,7 @@ def build(engine):
         "data/fares.json": _j({"airlines": airlines, "rows": compact}),
         "data/places.json": _j(places),
         "data/photos.json": _j(photos.public(db)),
+        "data/coords.json": _j(photos.public_coords(db)),
         "data/stats.json": _j(stats),
         "data/hist.json": _j(hist),
         "data/exotic_posts.json": _j(exotic["posts"]),
