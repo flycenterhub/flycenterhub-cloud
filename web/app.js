@@ -1046,9 +1046,165 @@ function filtersSummary() {
   const n = [state.dep, state.origin !== "ALL", state.trip !== "ALL" && !state.dep, state.max, state.q.trim(), seats() > 1 || state.infants > 0, !state.exact].filter(Boolean).length;
   $("#filters-sum").textContent = n ? `${n} ${n === 1 ? "activ" : "active"}` : "";
 }
+/* ---------- randare: harta cu prețuri ---------- */
+const MAP = { region: "eu", max: null, lib: null, world: null, coords: null };
+function loadScript(src) {
+  return new Promise((ok, bad) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
+}
+async function mapLibs() {
+  if (!MAP.lib) MAP.lib = (async () => {
+    if (!window.d3) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js");
+    if (!window.topojson) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js");
+    const [world, coords] = await Promise.all([
+      fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(r => r.json()),
+      api("/api/coords"),
+    ]);
+    MAP.world = topojson.feature(world, world.objects.countries);
+    MAP.coords = coords || {};
+  })();
+  return MAP.lib;
+}
+// cel mai mic preț spre fiecare destinație, din orașul ales (sau din oricare), pe tipul de călătorie ales
+function mapRows() {
+  // Europa: dus (sau ce ai ales la filtre); toată lumea: dus-întors, cum se caută de obicei zborurile lungi
+  const tripKey = state.trip === "RT" || (MAP.region === "world" && state.trip !== "OW") ? "RT" : "OW";
+  const origins = (state.status?.origins || []).map(o => o.code).filter(c => state.origin === "ALL" || c === state.origin);
+  const q = state.q.trim().toLowerCase();
+  const out = [];
+  for (const d of state.dest || []) {
+    if (q && !`${d.dest_name} ${d.country} ${d.dest}`.toLowerCase().includes(q)) continue;
+    let best = null;
+    for (const o of origins) {
+      const c = (d[tripKey] || {})[o];
+      if (c && (!best || c.min_eur < best.min_eur)) best = { ...c, origin: o };
+    }
+    if (best) out.push({ ...d, best, tripKey });
+  }
+  // pe harta lumii intră și destinațiile exotice (Asia, America, Africa...)
+  if (MAP.region === "world") {
+    const byDest = new Map(out.map(r => [r.dest, r]));
+    for (const f of state.exotic?.fares || []) {
+      const trip = f.trip || (f.ret_date ? "RT" : "OW");
+      if (trip !== tripKey || !origins.includes(f.origin)) continue;
+      if (q && !`${f.dest_name} ${f.country} ${f.dest}`.toLowerCase().includes(q)) continue;
+      const cur = byDest.get(f.dest);
+      if (cur && cur.best.min_eur <= f.price_eur) continue;
+      const row = { dest: f.dest, dest_name: f.dest_name, country: f.country, tripKey,
+        best: { min_eur: f.price_eur, typical_eur: f.typical_eur, date: f.dep_date, ret: f.ret_date, origin: f.origin, source: f.source } };
+      byDest.set(f.dest, row);
+    }
+    return [...byDest.values()];
+  }
+  return out;
+}
+function mapCount() { const el = $("#c-map"); if (el) el.textContent = state.dest?.length ? mapRows().length || "" : ""; }
+async function renderMap() {
+  const el = $("#tab-map");
+  mapCount();
+  if (!state.dest?.length) { el.innerHTML = emptyState(); return; }
+  if (!el.querySelector(".map-wrap")) {
+    el.innerHTML = `<div class="map-head">
+        <div class="seg map-region"><button data-mreg="eu" class="${MAP.region === "eu" ? "on" : ""}">Europa</button><button data-mreg="world" class="${MAP.region === "world" ? "on" : ""}">Toată lumea</button></div>
+        <label class="map-budget">Buget maxim <input type="range" id="map-max" min="10" max="500" step="5"> <b id="map-max-v"></b></label>
+        <span class="map-count" id="map-count"></span>
+      </div>
+      <div class="map-wrap"><svg id="map-svg" viewBox="0 0 960 560" role="img" aria-label="Harta cu prețurile zborurilor"></svg><div class="map-tip" id="map-tip" hidden></div>
+        <div class="map-loading" id="map-loading">Se încarcă harta…</div></div>
+      <div class="map-legend" id="map-legend"></div>
+      <div class="map-top" id="map-top"></div>`;
+    el.querySelector(".map-region").addEventListener("click", e => {
+      const b = e.target.closest("[data-mreg]"); if (!b) return;
+      MAP.region = b.dataset.mreg; MAP.max = null;
+      el.querySelectorAll("[data-mreg]").forEach(x => x.classList.toggle("on", x === b));
+      drawMap();
+    });
+    $("#map-max").addEventListener("input", e => { MAP.max = +e.target.value; drawMap(false); });
+  }
+  try { await mapLibs(); } catch (e) { $("#map-loading").textContent = "Harta nu s-a putut încărca. Verifică conexiunea la internet."; return; }
+  $("#map-loading").hidden = true;
+  drawMap();
+}
+function drawMap(full = true) {
+  const svg = d3.select("#map-svg");
+  if (svg.empty() || !MAP.world) return;
+  const dark = document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+  const eu = MAP.region === "eu";
+  const all = mapRows().map(r => ({ ...r, xy: MAP.coords[r.dest] })).filter(r => r.xy)
+    .filter(r => !eu || (r.xy[0] > -26 && r.xy[0] < 46 && r.xy[1] > 27 && r.xy[1] < 72));
+  // bugetul: implicit toate; sliderul merge până la cel mai scump preț din regiune
+  const hi = Math.max(20, ...all.map(r => r.best.min_eur));
+  const slider = $("#map-max");
+  slider.max = Math.ceil(hi / 5) * 5;
+  if (MAP.max == null || MAP.max > +slider.max) MAP.max = +slider.max;
+  slider.value = MAP.max;
+  $("#map-max-v").textContent = eur(MAP.max);
+  const rows = all.filter(r => r.best.min_eur <= MAP.max).sort((a, b) => b.best.min_eur - a.best.min_eur);
+  $("#map-count").textContent = `${rows.length} destinații · ${all[0]?.tripKey === "RT" ? "dus-întors" : "dus"}${state.origin !== "ALL" ? " · din " + (ORIGIN_NAMES[state.origin] || state.origin) : ""}`;
+  // culori: treimi de preț (ieftin / mediu / mai scump), calculate pe destinațiile afișate
+  const sorted = all.map(r => r.best.min_eur).sort((a, b) => a - b);
+  const q1 = sorted[Math.floor(sorted.length / 3)] ?? 0, q2 = sorted[Math.floor(sorted.length * 2 / 3)] ?? 0;
+  const tone = p => p <= q1 ? "#0F6E56" : p <= q2 ? "#5DCAA5" : "#EF9F27";
+  $("#map-legend").innerHTML = sorted.length ? `<span><i style="background:#0F6E56"></i>până la ${eur(q1)}</span><span><i style="background:#5DCAA5"></i>${eur(q1)} – ${eur(q2)}</span><span><i style="background:#EF9F27"></i>peste ${eur(q2)}</span><span><i class="o"></i>orașele de plecare</span><span class="muted">Apasă pe un oraș pentru calendarul prețurilor</span>` : "";
+  const proj = eu ? d3.geoConicConformal().center([11, 49]).rotate([-3, 0]).parallels([35, 62]).scale(1080).translate([480, 300])
+                  : d3.geoNaturalEarth1().scale(175).translate([470, 300]);
+  const path = d3.geoPath(proj);
+  if (full || svg.select(".m-land").empty()) {
+    svg.selectAll("*").remove();
+    svg.append("g").attr("class", "m-land").selectAll("path").data(MAP.world.features).join("path").attr("d", path)
+      .attr("fill", dark ? "#2a2a28" : "#ecebe6").attr("stroke", dark ? "#3d3d3a" : "#ffffff").attr("stroke-width", .6);
+    svg.append("g").attr("class", "m-arcs"); svg.append("g").attr("class", "m-pins"); svg.append("g").attr("class", "m-origins");
+  }
+  const origins = [...new Set(rows.map(r => r.best.origin))].filter(o => MAP.coords[o]);
+  const oxy = o => proj(MAP.coords[o]);
+  const arc = r => { const [x0, y0] = oxy(r.best.origin), [x, y] = proj(r.xy);
+    return `M${x0},${y0}Q${(x0 + x) / 2},${(y0 + y) / 2 - Math.hypot(x - x0, y - y0) * .2} ${x},${y}`; };
+  svg.select(".m-arcs").selectAll("path").data(rows, r => r.dest).join("path").attr("d", arc)
+    .attr("fill", "none").attr("stroke", r => tone(r.best.min_eur)).attr("stroke-width", 1).attr("opacity", .28);
+  // etichete doar pentru cele mai ieftine, fără să se suprapună (cel mai ieftin are prioritate)
+  const cheapest = new Set(), placed = [];
+  for (const r of [...rows].sort((a, b) => a.best.min_eur - b.best.min_eur)) {
+    if (cheapest.size >= (eu ? 12 : 10)) break;
+    const [x, y] = proj(r.xy), w = 7 * (r.dest_name.length + 7);
+    if (placed.some(p => x < p.x + p.w && x + w > p.x && Math.abs(y - p.y) < 16)) continue;
+    placed.push({ x, y, w }); cheapest.add(r.dest);
+  }
+  const pins = svg.select(".m-pins").selectAll("g.pin").data(rows, r => r.dest).join(enter => {
+    const g = enter.append("g").attr("class", "pin");
+    g.append("circle").attr("class", "hit").attr("r", 12).attr("fill", "transparent");
+    g.append("circle").attr("class", "dot").attr("r", 5.5).attr("stroke-width", 2);
+    g.append("text").attr("x", 9).attr("y", 4);
+    return g;
+  });
+  pins.attr("transform", r => `translate(${proj(r.xy)})`).attr("data-route", r => `${r.best.origin}|${r.dest}|${r.tripKey}`);
+  pins.select(".dot").attr("fill", r => tone(r.best.min_eur)).attr("stroke", dark ? "#1a1a19" : "#fff");
+  pins.select("text").text(r => cheapest.has(r.dest) ? `${r.dest_name.replace(/ \(.*\)$/, "")} ${eur(r.best.min_eur)}` : "")
+    .attr("fill", dark ? "#f1efe8" : "#2c2c2a").attr("stroke", dark ? "#1a1a19" : "#fff");
+  const og = svg.select(".m-origins").selectAll("g").data(origins, o => o).join(enter => {
+    const g = enter.append("g"); g.append("circle").attr("r", 7.5).attr("fill", "#D85A30").attr("stroke-width", 2.5);
+    g.append("text").attr("x", 11).attr("y", 4).attr("class", "o"); return g; });
+  og.attr("transform", o => `translate(${oxy(o)})`);
+  og.select("circle").attr("stroke", dark ? "#1a1a19" : "#fff");
+  og.select("text").text(o => origins.length <= 2 ? (ORIGIN_NAMES[o] || o) : "").attr("fill", dark ? "#F0997B" : "#993C1D").attr("stroke", dark ? "#1a1a19" : "#fff");
+  const tip = $("#map-tip"), wrap = $("#tab-map .map-wrap");
+  pins.on("mousemove", (e, r) => {
+    const b = wrap.getBoundingClientRect();
+    tip.hidden = false;
+    tip.style.left = Math.min(e.clientX - b.left + 14, b.width - 200) + "px";
+    tip.style.top = (e.clientY - b.top - 12) + "px";
+    tip.innerHTML = `<b>${esc(r.dest_name)}</b> <span class="muted">${esc(r.country)}</span><br>de la <b>${eur(r.best.min_eur)}</b> · ${r.tripKey === "RT" ? "dus-întors" : "dus"} din ${esc(ORIGIN_NAMES[r.best.origin] || r.best.origin)}` +
+      `<br><span class="muted">${fmtDate(r.best.date, false)}${r.best.ret ? " → " + fmtDate(r.best.ret, false) : ""}${r.best.typical_eur ? " · de obicei " + eur(r.best.typical_eur) : ""}</span>`;
+    svg.select(".m-arcs").selectAll("path").attr("opacity", a => a.dest === r.dest ? .95 : .08);
+  }).on("mouseleave", () => { tip.hidden = true; svg.select(".m-arcs").selectAll("path").attr("opacity", .28); });
+  // sub hartă: cele mai ieftine, ca listă scurtă (merge și pe telefon)
+  const top = [...rows].sort((a, b) => a.best.min_eur - b.best.min_eur).slice(0, 12);
+  $("#map-top").innerHTML = top.length ? `<div class="map-top-t">Cele mai ieftine pe hartă</div><div class="map-chips">${top.map(r =>
+    `<button class="map-chip" data-route="${r.best.origin}|${r.dest}|${r.tripKey}"><b>${esc(r.dest_name.replace(/ \(.*\)$/, ""))}</b><span>${eur(r.best.min_eur)}</span><small>din ${esc(ORIGIN_NAMES[r.best.origin] || r.best.origin)}</small></button>`).join("")}</div>`
+    : `<div class="empty">Nicio destinație sub acest buget.</div>`;
+}
 function renderAll() {
   filtersSummary();
   renderDeals(); renderSearch(); renderLM(); renderDest(); renderExotic(); renderPosts(); renderHelp();
+  if (state.tab === "map") renderMap(); else mapCount();
   if (state.tab === "favs") renderFavs(); else saveFavs();
 }
 
@@ -1226,7 +1382,8 @@ function setTab(t) {
   if (!$(`#tab-${t}`)) t = "deals";
   state.tab = t;
   $$(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
-  for (const id of ["deals", "search", "lm", "dest", "exotic", "favs", "posts", "help"]) $(`#tab-${id}`).hidden = id !== t;
+  for (const id of ["deals", "search", "lm", "dest", "map", "exotic", "favs", "posts", "help"]) $(`#tab-${id}`).hidden = id !== t;
+  if (t === "map") renderMap();
   $("#filters").hidden = t === "help" || t === "favs";
   if (t === "favs") renderFavs();
   $("#f-sort-wrap").hidden = !["deals", "search", "lm", "dest", "exotic"].includes(t);
