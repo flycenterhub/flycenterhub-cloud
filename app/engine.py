@@ -97,6 +97,18 @@ class Engine:
                     try:
                         results[name] = fn(cfg, self.db, scan_id,
                                            lambda s, d=None, t=None, n=name: self._prog(n, s, d, t), self.stop)
+                        if name == "ryanair" and not quick and not only:
+                            # după Ryanair: zborurile din hub-uri, pentru escalele făcute de tine (extras.py)
+                            from . import extras
+                            try:
+                                results["escale"] = extras.scan_hubs(
+                                    cfg, self.db, lambda s, d=None, t=None: self._prog("escale", s, d, t), self.stop)
+                            except Exception as e:
+                                log.warning("Escale: %s", e)
+                            finally:
+                                self.progress.pop("escale", None)
+                                if "escale" in self.progress_counts:
+                                    self.progress_counts["escale"] = (self.progress_counts["escale"][1],) * 2
                     except Exception as e:
                         log.error("Sursa %s a eșuat: %s", name, traceback.format_exc())
                         results[name] = {"routes_ok": 0, "routes_failed": 0, "fares": 0, "errors": [str(e)]}
@@ -137,6 +149,11 @@ class Engine:
                     photos.refresh(self.db)
                 except Exception as e:
                     log.warning("Poze: %s", e)
+                try:  # vremea medie la destinațiile noi (NASA POWER)
+                    from . import extras
+                    extras.refresh_climate(self.db)
+                except Exception as e:
+                    log.warning("Vremea: %s", e)
                 # scanare pornită din butoane: publică imediat; automată: cel mult o dată la N minute
                 threading.Thread(target=self.publish_site, args=(manual,), daemon=True).start()
             self.db.finish_scan(scan_id, status, info)

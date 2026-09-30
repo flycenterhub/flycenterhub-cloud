@@ -80,6 +80,12 @@ def url(file, width=640):
     return f"https://commons.wikimedia.org/wiki/Special:FilePath/{urllib.parse.quote(file)}?width={width}"
 
 
+def _dests(db):
+    """Destinațiile din zborurile noastre + cele la care ajungi prin escale (vezi extras.py)."""
+    hub = {r[1] for r in (db.get_kv("hub_fares") or {}).get("rows") or []}
+    return {r["dest"] for r in db.q("SELECT DISTINCT dest FROM fares")} | hub
+
+
 def refresh(db, force=False):
     """Caută poze pentru destinațiile care nu au încă. Întoarce câte s-au găsit acum."""
     import os
@@ -87,7 +93,7 @@ def refresh(db, force=False):
         sync_from_site(db)
     have = {} if force else (db.get_kv("photos") or {})
     tried = set() if force else set(db.get_kv("photos_tried") or [])
-    codes = sorted({r["dest"] for r in db.q("SELECT DISTINCT dest FROM fares")} - set(have) - tried)
+    codes = sorted(_dests(db) - set(have) - tried)
     ccs = {p["code"]: p["cc"] for p in db.q("SELECT code, cc FROM places")}
     found = 0
     for i in range(0, len(codes), 150):
@@ -352,6 +358,13 @@ EMBLEMATIC = {
     'ZTH': 'Navagio_beach_Zakynthos.jpg',
 }
 # Turnul Eiffel: varianta pe orizontală, se vede întreg pe card
+# destinațiile noi, la care se ajunge prin escale (verificate vizual)
+EMBLEMATIC.update({
+    'CWL': 'Cardiff_Castle_keep_2018.jpg', 'NOC': 'Knock_Basilica_16_July_2017.jpg', 'NRN': 'Düsseldorf_skyline.jpg',
+    'PIK': 'Culzean_Castle.JPG', 'LDE': '2018_-_Basilique_Notre-Dame-du-Rosaire_de_Lourdes.jpg',
+    'BVE': 'Brive-la-Gaillarde_-_Collégiale_Saint-Martin_-_7.jpg', 'KIR': 'Ross_Castle_(Killarney).jpg',
+    'BOH': 'Bournemouth_Pier_-_geograph.org.uk_-_2022986.jpg',
+})
 _PARIS = "La_Tour_Eiffel_vue_de_la_Tour_Saint-Jacques,_Paris_août_2014_(2).jpg"
 OVERRIDES = {**EMBLEMATIC, "CDG": _PARIS, "ORY": _PARIS, "BVA": _PARIS, "PAR": _PARIS}
 
@@ -402,7 +415,7 @@ def refresh_coords(db, force=False):
     Ordinea surselor: Ryanair și Wizz Air (oficiale), apoi Wikidata doar pentru restul, cu verificarea țării."""
     have = {} if force else (db.get_kv("coords") or {})
     src = {} if force else (db.get_kv("coords_src") or {})
-    codes = sorted({r["dest"] for r in db.q("SELECT DISTINCT dest FROM fares")}
+    codes = sorted(_dests(db)
                    | {r["origin"] for r in db.q("SELECT DISTINCT origin FROM fares")})
     missing = [c for c in codes if c not in have]
     if not missing:

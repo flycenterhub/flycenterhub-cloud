@@ -60,6 +60,12 @@ def make_handler(engine):
                 if u.path == "/api/coords":
                     from . import photos
                     return self._json(photos.public_coords(db))
+                if u.path == "/api/climate":
+                    from . import extras
+                    return self._json(extras.public_climate(db))
+                if u.path == "/api/escale":
+                    from . import extras
+                    return self._json(extras.public_connections(db, cfg))
                 if u.path == "/api/photos-admin":
                     from . import photos
                     return self._json(photos.admin_list(db))
