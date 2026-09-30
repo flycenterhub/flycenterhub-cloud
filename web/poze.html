@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poze destinații · FlyCenterHub</title>
+<style>
+  :root { --bg: #f4f2ee; --card: #fff; --text: #1d1d1b; --muted: #77746d; --line: #e4e1da; --accent: #1f6feb; --ok: #1a7f37; --warn: #b54708; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #161615; --card: #22221f; --text: #f1efe8; --muted: #a09d94; --line: #34332f; --accent: #58a6ff; --ok: #3fb950; --warn: #f0883e; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+  header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 14px 16px; }
+  .bar { max-width: 1300px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  h1 { font-size: 19px; margin: 0 12px 0 0; }
+  input[type=search], input[type=text] { font: inherit; padding: 8px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--card); color: var(--text); }
+  select { font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--card); color: var(--text); }
+  button { font: inherit; padding: 8px 13px; border-radius: 9px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .55; cursor: default; }
+  .note { font-size: 13px; color: var(--muted); }
+  main { max-width: 1300px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .d { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+  .d .img { height: 140px; background: var(--line) center/cover no-repeat; position: relative; }
+  .d .src { position: absolute; left: 8px; top: 8px; font-size: 11px; padding: 2px 8px; border-radius: 99px; background: rgba(0,0,0,.55); color: #fff; }
+  .d .src.mine { background: var(--ok); }
+  .d .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .d .t { font-weight: 600; }
+  .d .t small { font-weight: 400; color: var(--muted); }
+  .d .row { display: flex; gap: 6px; }
+  .d .row button { flex: 1; padding: 6px 8px; font-size: 13px; }
+  dialog { border: 0; border-radius: 16px; padding: 0; width: min(1000px, 96vw); background: var(--card); color: var(--text); }
+  dialog::backdrop { background: rgba(0,0,0,.5); }
+  .dh { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .dh h2 { margin: 0 auto 0 0; font-size: 17px; }
+  .grid { padding: 14px 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; max-height: 60vh; overflow: auto; }
+  .grid img { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; cursor: pointer; border: 3px solid transparent; display: block; }
+  .grid img:hover { border-color: var(--accent); }
+  .df { padding: 12px 16px 16px; border-top: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .df input { flex: 1; min-width: 240px; }
+  #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; display: none; z-index: 20; }
+  #pending { color: var(--warn); font-weight: 600; }
+  .df.up { border-top: 1px solid var(--line); }
+  .upbtn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 9px; background: var(--ok); color: #fff; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>🖼 Poze destinații</h1>
+    <input type="search" id="q" placeholder="Caută oraș sau cod (ex. Roma, FCO)" style="flex:1;min-width:200px">
+    <select id="f">
+      <option value="">Toate</option>
+      <option value="aleasă de tine">Alese de tine</option>
+      <option value="emblematică">Emblematice</option>
+      <option value="automată">Automate</option>
+      <option value="fără poză">Fără poză</option>
+    </select>
+    <button class="primary" id="pub">Publică pe site</button>
+    <span id="pending"></span>
+  </div>
+  <div class="bar note" style="margin-top:6px">Apasă „Schimbă” la o destinație și alege altă poză. Pozele vin doar de pe Wikimedia Commons (libere și gratuite). După ce termini, apasă „Publică pe site”.</div>
+</header>
+<main id="list"></main>
+
+<dialog id="dlg">
+  <div class="dh">
+    <h2 id="dt"></h2>
+    <input type="search" id="sq" style="min-width:220px">
+    <button id="sgo">Caută</button>
+    <button id="close">Închide</button>
+  </div>
+  <div class="grid" id="res"><div class="note">Se caută…</div></div>
+  <div class="df up">
+    <label class="upbtn">📁 Încarcă de pe laptop<input type="file" id="file" accept="image/*" hidden></label>
+    <span class="note">Doar poze făcute de tine sau pe care ai voie să le folosești. Se micșorează automat.</span>
+  </div>
+  <div class="df">
+    <input type="text" id="link" placeholder="sau lipește linkul unei poze de pe commons.wikimedia.org">
+    <button class="primary" id="use">Folosește linkul</button>
+    <button id="reset">Revino la poza automată</button>
+  </div>
+</dialog>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const thumb = f => f.startsWith("local:") ? `photos/${f.slice(6)}` : `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=500`;
+let rows = [], cur = null, changed = 0;
+
+function toast(t) { const el = $("#toast"); el.textContent = t; el.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => el.style.display = "none", 2600); }
+function markChanged() { changed++; $("#pending").textContent = `${changed} modificări nepublicate`; }
+
+async function load() {
+  rows = await fetch("/api/photos-admin").then(r => r.json());
+  render();
+}
+function render() {
+  const q = $("#q").value.trim().toLowerCase(), f = $("#f").value;
+  const list = rows.filter(r => (!f || r.src === f) &&
+    (!q || r.code.toLowerCase() === q || r.name.toLowerCase().includes(q) || r.country.toLowerCase().includes(q)));
+  $("#list").innerHTML = list.map(r => `
+    <div class="d" data-code="${r.code}">
+      <div class="img" style="${r.file ? `background-image:url('${thumb(r.file)}')` : ""}"><span class="src${r.src === "aleasă de tine" ? " mine" : ""}">${esc(r.src)}</span></div>
+      <div class="body">
+        <div class="t">${esc(r.name)} <small>${esc(r.code)} · ${esc(r.country)}</small></div>
+        <div class="row"><button data-act="change">Schimbă</button>${r.file ? `<button data-act="open">Vezi mare</button>` : ""}</div>
+      </div>
+    </div>`).join("") || `<p class="note">Nicio destinație găsită.</p>`;
+}
+async function search(q) {
+  $("#res").innerHTML = `<div class="note">Se caută…</div>`;
+  const res = await fetch(`/api/photo-search?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []);
+  $("#res").innerHTML = res.length ? res.map(p => `<img src="${esc(p.thumb)}" data-file="${esc(p.file)}" title="${esc(p.file)}" loading="lazy">`).join("")
+    : `<div class="note">N-am găsit poze. Încearcă alt cuvânt (ex. numele monumentului, în engleză).</div>`;
+}
+async function save(file) {
+  const r = await fetch("/api/photo-set", { method: "POST", headers: { "X-Zboruri": "1", "Content-Type": "application/json" },
+    body: JSON.stringify({ code: cur.code, file }) }).then(r => r.json());
+  if (!r.ok) { toast(r.message || "Nu s-a putut salva"); return; }
+  $("#dlg").close(); markChanged(); toast(file ? "Poză salvată" : "Revenit la poza automată");
+  await load();
+}
+$("#list").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const code = b.closest(".d").dataset.code; cur = rows.find(r => r.code === code);
+  if (b.dataset.act === "open") return window.open(`https://commons.wikimedia.org/wiki/File:${encodeURIComponent(cur.file)}`, "_blank");
+  $("#dt").textContent = `${cur.name} (${cur.code})`;
+  const city = cur.name.replace(/\s*\(.*?\)|\b(airport|all airports)\b/gi, "").trim();
+  $("#sq").value = city; $("#link").value = "";
+  $("#dlg").showModal(); search(city);
+});
+$("#res").addEventListener("click", e => { const f = e.target.dataset?.file; if (f) save(f); });
+$("#sgo").addEventListener("click", () => search($("#sq").value));
+$("#sq").addEventListener("keydown", e => { if (e.key === "Enter") search($("#sq").value); });
+$("#use").addEventListener("click", () => { const v = $("#link").value.trim(); if (!v) return toast("Lipește întâi un link"); save(v); });
+$("#reset").addEventListener("click", () => save(""));
+// citește orice poză pe care o poate afișa browserul (JPG, PNG, WEBP, GIF, BMP, AVIF…)
+async function readImage(file) {
+  try { return await createImageBitmap(file); } catch (e) { /* încercăm și altfel */ }
+  const url = URL.createObjectURL(file);
+  try {
+    return await new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(im); im.onerror = bad; im.src = url; });
+  } finally { setTimeout(() => URL.revokeObjectURL(url), 5000); }
+}
+// încărcare de pe laptop: micșorăm poza în browser (max 1400 px, JPEG) înainte s-o trimitem
+$("#file").addEventListener("change", async e => {
+  const file = e.target.files[0]; e.target.value = "";
+  if (!file) return;
+  if (/heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name))
+    return toast("Poza e în format HEIC (iPhone). Deschide-o și salveaz-o ca JPG, apoi încarc-o din nou.");
+  toast("Se încarcă poza…");
+  try {
+    const img = await readImage(file);
+    const k = Math.min(1, 1400 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    const data = c.toDataURL("image/jpeg", 0.85);
+    const r = await fetch("/api/photo-upload", { method: "POST", headers: { "X-Zboruri": "1", "Content-Type": "application/json" },
+      body: JSON.stringify({ code: cur.code, data }) }).then(x => x.json());
+    if (!r.ok) return toast(r.message || "Nu s-a putut încărca");
+    $("#dlg").close(); markChanged(); toast("Poză încărcată");
+    await load();
+  } catch (err) { toast("Browserul nu poate citi acest fișier. Salvează poza ca JPG și încearcă din nou."); }
+});
+$("#close").addEventListener("click", () => $("#dlg").close());
+$("#q").addEventListener("input", render);
+$("#f").addEventListener("change", render);
+$("#pub").addEventListener("click", async () => {
+  $("#pub").disabled = true;
+  await fetch("/api/publish", { method: "POST", headers: { "X-Zboruri": "1" } });
+  toast("Se publică pe site… gata în 1–2 minute");
+  changed = 0; $("#pending").textContent = "";
+  setTimeout(() => $("#pub").disabled = false, 8000);
+});
+load();
+</script>
+</body>
+</html>

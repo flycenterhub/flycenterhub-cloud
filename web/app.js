@@ -1025,6 +1025,9 @@ function photoOf(code) { return PHOTOS[code]; }
 function fcPhoto(r) {
   const f = photoOf(r.dest);
   if (!f) return "";
+  if (f.startsWith("local:")) {  // poză încărcată de pe laptop (în folderul photos/ al site-ului)
+    return `<div class="fc-photo"><img src="photos/${esc(f.slice(6))}" alt="${esc(r.dest_name)}" loading="lazy" decoding="async" onerror="this.parentNode.remove()"></div>`;
+  }
   const src = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=500`;
   return `<div class="fc-photo"><img src="${src}" alt="${esc(r.dest_name)}" loading="lazy" decoding="async" onerror="this.parentNode.remove()">` +
     `<a class="fc-credit" href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(f)}" target="_blank" rel="noopener" title="Foto: Wikimedia Commons (licență liberă) — vezi autorul">©</a></div>`;
@@ -1393,10 +1396,11 @@ $("#btn-theme").addEventListener("click", () => {
   setTab(state.tab);
   loadStatus().then(() => { if (!state.lastScanId) loadData(); });
   if (STATIC) { $("#btn-scan").hidden = true; $("#btn-quick").hidden = true; }
-  else {  // doar pe laptop: pagina în care alegi pozele destinațiilor
+  else {  // doar pe laptop (site-ul „din spate”): pagina în care alegi pozele destinațiilor
     const a = document.createElement("a");
     a.href = "poze.html"; a.className = "btn small ghost"; a.textContent = "🖼 Poze"; a.title = "Verifică și schimbă pozele destinațiilor";
     $("#btn-theme").before(a);
   }
+
   setInterval(loadStatus, STATIC ? 60000 : 8000);
 })();
