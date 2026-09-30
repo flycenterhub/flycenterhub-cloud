@@ -646,12 +646,12 @@ function initShelves(root) {
     upd();
   }
 }
-addEventListener("resize", () => { for (const id of ["#tab-deals", "#tab-search", "#tab-exotic"]) { const el = $(id); if (el) initShelves(el); } });
+addEventListener("resize", () => { for (const id of ["#tab-deals", "#tab-search", "#tab-exotic", "#tab-escale"]) { const el = $(id); if (el) initShelves(el); } });
 function toggleShelf(id) {
   const tab = id.split(":")[0];
   const wasOpen = state.openShelves.has(id);
   if (wasOpen) state.openShelves.delete(id); else state.openShelves.add(id);
-  ({ deals: renderDeals, search: renderSearch, exotic: renderExotic })[tab]?.();
+  ({ deals: renderDeals, search: renderSearch, exotic: renderExotic, escale: renderEscale })[tab]?.();
   if (wasOpen) {
     const sec = [...$$(".shelf")].find(s => s.dataset.shelf === id);
     if (sec && sec.getBoundingClientRect().top < 0) sec.scrollIntoView({ block: "start" });
@@ -788,6 +788,7 @@ function flightCard(r, opts = {}) {
     <div class="fc-price"><span class="price num">${eur(r.price_eur)}</span>${leiSpan(r)}</div>
     ${wizzFee(r)}
     ${whenLine(r)}
+    ${fcWeather(r)}
     ${opts.favNote || ""}
     ${mixed ? `<div class="fc-legs">${legShort("🛫", r.out)}${legShort("🛬", r.back)}</div>` : ""}
     <div class="fc-meta">${airline ? `<span>${airline}</span>` : ""}${cardTags(r)}</div>
@@ -916,6 +917,10 @@ function renderHelp() {
   <p>Fără date, fiecare tab arată toate zborurile. Dacă ai date fixe, alege-le în chenarul 📅 și toate listele se filtrează pe ele. Cu „Flexibil ±” prinzi și zilele vecine. Cu dată de întoarcere, „Caută pe date” și „Toate destinațiile” combină cel mai ieftin dus cu cel mai ieftin întors, chiar dacă sunt companii diferite.</p>
   <h2>👥 Persoane și locuri</h2>
   <p>Alege numărul de persoane (1–9) în filtre: vezi prețul total pentru grup, iar „Rezervă” și „Compară” se deschid direct cu toți pasagerii. Apasă <b>🔄 Verifică</b> pe un bilet Wizz Air sau Ryanair ca să afli <b>câte locuri mai sunt la acel preț</b> (de exemplu „mai sunt doar 3 locuri”) și dacă prețul crește pentru grupul tău. Companiile nu publică numărul exact de locuri din avion; aplicația îl află din prețul pentru 1–9 persoane.</p>
+  <h2>🔀 Escale făcute de tine</h2>
+  <p>Două bilete low-cost separate, prin aeroporturile mari Ryanair (de exemplu Cluj → Bergamo, apoi Bergamo → Sevilla), când ies mai ieftine decât zborul direct sau când nu există zbor direct. Arătăm doar combinații cu peste 3 ore între zboruri sau cu o noapte la escală. Atenție: fiind bilete separate, dacă primul zbor întârzie, al doilea nu te așteaptă.</p>
+  <h2>☀️ Vremea și 🎲 Surprinde-mă</h2>
+  <p>Pe fiecare zbor vezi temperatura medie și cât plouă de obicei în luna călătoriei (media 2001–2020, date NASA POWER; nu e o prognoză). Butonul <b>🎲 Surprinde-mă</b> alege la întâmplare o destinație în bugetul tău, din orașul selectat.</p>
   <h2>🌴 Exotice din Budapesta și București</h2>
   <p>Destinații din afara Europei (Asia, insulele din Oceanul Indian, Orientul Mijlociu, Africa, America, Oceania), orice companie, direct sau cu escală, dus-întors cu sejururi de ${s.exotic?.min_nights ?? 5}–${s.exotic?.max_nights ?? 28} nopți, pe următoarele ${s.exotic?.months_ahead ?? 8} luni. Pentru ele, pragul de ofertă e mai mare: până la ${s.exotic?.max_price_rt_eur ?? 1400} € dus-întors, iar sub ${s.exotic?.super_cheap_rt_eur ?? 400} € e „super ieftin”.</p>
   <h2>Cum se decide că e o ofertă</h2>
@@ -1032,8 +1037,20 @@ function fcPhoto(r) {
   return `<div class="fc-photo"><img src="${src}" alt="${esc(r.dest_name)}" loading="lazy" decoding="async" onerror="this.parentNode.remove()">` +
     `<a class="fc-credit" href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(f)}" target="_blank" rel="noopener" title="Foto: Wikimedia Commons (licență liberă) — vezi autorul">©</a></div>`;
 }
+/* ---------- vremea medie în luna zborului (NASA POWER, 2001–2020) ---------- */
+let CLIMATE = {};
+const climateP = api("/api/climate").then(c => { CLIMATE = c || {}; }).catch(() => {});
+function fcWeather(r, date = r.dep_date) {
+  const c = CLIMATE[r.dest];
+  if (!c || !date) return "";
+  const m = +date.slice(5, 7) - 1, [t, mm] = c[m] || [];
+  if (t == null) return "";
+  const [ico, rain] = mm < 20 ? ["☀️", "fără ploaie"] : mm < 60 ? ["🌤️", "puțină ploaie"] : mm < 110 ? ["🌦️", "ploi moderate"] : ["🌧️", "ploios"];
+  return `<div class="fc-wx" title="Media lunii ${MONTHS_FULL[m].toLowerCase()} (zi și noapte), pe 2001–2020, după NASA POWER: ${t}°C și ${mm} mm de ploaie. Nu e o prognoză meteo.">` +
+    `<span aria-hidden="true">${t < 3 ? "❄️" : ico}</span><span>${MONTHS[m]}: ~${String(Math.round(t)).replace("-", "−")}°C medie · ${rain}</span></div>`;
+}
 async function loadData() {
-  await photosP;
+  await Promise.all([photosP, climateP]);
   const [deals, lm, dest, posts] = await Promise.all([
     api(`/api/deals${exactQ()}`), api(`/api/lastminute?days=${state.days}${exactQ("&")}`), api(`/api/destinations${exactQ()}`), api("/api/posts"),
   ]);
@@ -1201,10 +1218,70 @@ function drawMap(full = true) {
     `<button class="map-chip" data-route="${r.best.origin}|${r.dest}|${r.tripKey}"><b>${esc(r.dest_name.replace(/ \(.*\)$/, ""))}</b><span>${eur(r.best.min_eur)}</span><small>din ${esc(ORIGIN_NAMES[r.best.origin] || r.best.origin)}</small></button>`).join("")}</div>`
     : `<div class="empty">Nicio destinație sub acest buget.</div>`;
 }
+/* ---------- escale făcute de tine: două bilete low-cost separate, prin hub-urile Ryanair ---------- */
+let ESC = null, escP = null;
+function loadEscale() {
+  if (!escP) escP = api("/api/escale").then(d => { ESC = d || { rows: [] }; }).catch(() => { ESC = { rows: [] }; escP = null; });
+  return escP;
+}
+function escRows() {
+  const P = ESC?.places || {};
+  return (ESC?.rows || []).map(c => ({ ...c, trip: "OW", origin_name: ORIGIN_NAMES[c.origin] || P[c.origin]?.[0] || c.origin,
+    hub_name: P[c.hub]?.[0] || c.hub, dest_name: P[c.dest]?.[0] || c.dest, country: P[c.dest]?.[1] || "" }));
+}
+function escCard(r) {
+  const [s1, d1, t1, p1, a1, link1] = r.l1, [d2, t2, arr2, p2, link2] = r.l2;
+  const save = r.direct_eur != null ? r.direct_eur - r.price_eur : null;
+  return `<article class="card fc esc">
+    ${fcPhoto(r)}
+    <div class="fc-head">
+      <div class="fc-route">${esc(r.origin_name)}<span class="arrow">→</span>${esc(r.dest_name)}</div>
+      <div class="fc-head-r">${save >= 5 ? `<span class="fc-disc num" title="Mai ieftin decât cel mai ieftin zbor direct din ${esc(r.origin_name)}">−${Math.round(save)} €</span>` : ""}</div>
+    </div>
+    <div class="fc-place">${esc(r.country)}${r.country ? " · " : ""}prin ${esc(r.hub_name)}</div>
+    <div class="fc-price"><span class="price num">${eur(r.price_eur)}</span>${leiSpan(r)}</div>
+    <div class="esc-direct">${r.direct_eur != null ? `Zbor direct din ${esc(r.origin_name)}: de la <s class="num">${eur(r.direct_eur)}</s>` : `Nu există zbor direct din ${esc(r.origin_name)}`}</div>
+    ${fcWeather(r, d2)}
+    <ol class="esc-legs">
+      <li><span class="esc-n">1</span><div class="esc-leg"><b>${esc(r.origin_name)} → ${esc(r.hub_name)}</b><span>${fmtDate(d1)}, ${t1} · ${esc(a1)} · <b class="num">${eur(p1)}</b></span></div>${bookBtn(link1, a1)}</li>
+      <li class="esc-stop">${r.overnight ? `🌙 O noapte la ${esc(r.hub_name)}` : `⏱ Peste 3 ore între zboruri`}</li>
+      <li><span class="esc-n">2</span><div class="esc-leg"><b>${esc(r.hub_name)} → ${esc(r.dest_name)}</b><span>${fmtDate(d2)}, ${t2}${arr2 ? "–" + arr2 : ""} · Ryanair · <b class="num">${eur(p2)}</b></span></div>${bookBtn(link2, "Ryanair")}</li>
+    </ol>
+    ${r.more?.length ? `<div class="esc-more">📅 Alte date, de la ${eur(r.price_eur)} în sus: ${[...new Set(r.more)].sort().map(d => fmtDate(d, false)).join(", ")}</div>` : ""}
+    ${s1 === "wizzair" ? `<div class="fc-fee" title="Taxa de administrare Wizz Air, 8–13 € de persoană pe zbor">+ taxa Wizz Air la plată pe primul zbor: 8–13 €</div>` : ""}
+  </article>`;
+}
+async function renderEscale() {
+  const el = $("#tab-escale");
+  if (!ESC) { el.innerHTML = `<div class="empty">Caut combinațiile…</div>`; await loadEscale(); if (state.tab !== "escale") return; }
+  const all = escRows();
+  const w = datesInvalid() ? null : dateWindow();
+  const q = state.q.trim().toLowerCase(), max = parseFloat(state.max);
+  const rows = all.filter(r => (state.origin === "ALL" || r.origin === state.origin) && (!max || r.price_eur <= max) &&
+    (!q || `${r.dest_name} ${r.country} ${r.dest} ${r.hub_name}`.toLowerCase().includes(q)) &&
+    (!w || (r.dep_date >= w.depFrom && r.dep_date <= w.depTo))).sort((a, b) => a.price_eur - b.price_eur);
+  // o singură carte pe destinație (cea mai ieftină), cu numărul celorlalte date găsite
+  const byRoute = new Map();
+  for (const r of rows) {
+    const k = `${r.origin}|${r.dest}`;
+    if (byRoute.has(k)) byRoute.get(k).more.push(r.dep_date); else byRoute.set(k, { ...r, more: [] });
+  }
+  const cards = [...byRoute.values()];
+  const c = $("#c-escale"); if (c) c.textContent = all.length ? cards.length : "";
+
+  const head = `<div class="banner info">🔀 <div><b>Escale făcute de tine:</b> două zboruri low-cost separate, prin aeroporturile mari Ryanair (Bergamo, Barcelona, Charleroi…), mai ieftine decât zborul direct sau spre locuri unde nu există zbor direct. Prețuri pentru un drum (doar dus).</div></div>
+    <div class="banner warn">⚠️ <div><b>Sunt bilete separate.</b> Dacă primul zbor întârzie, al doilea nu te așteaptă și nu primești despăgubire. Recomandat doar cu bagaj de mână. Am ales numai combinații cu <b>peste 3 ore între zboruri</b> sau cu o noapte la escală.</div></div>`
+    + (state.dep && !datesInvalid() ? `<div class="banner">📅 <div>Escalele sunt doar dus: se arată cele cu plecare pe datele tale (<b>${fmtDate(w.depFrom, false)}${w.depTo !== w.depFrom ? " – " + fmtDate(w.depTo, false) : ""}</b>). <button class="linkish" data-clear-dates>Arată toate datele</button></div></div>` : "");
+  if (!all.length) { el.innerHTML = head + `<div class="empty">Combinațiile apar după următoarea scanare completă.</div>`; return; }
+  if (!rows.length) { el.innerHTML = head + `<div class="empty">Nicio escală pentru filtrele alese.</div>`; return; }
+  el.innerHTML = head + shelves("escale", cards, escCard, ["origin", "month", "country"], "escale");
+  initShelves(el);
+}
 function renderAll() {
   filtersSummary();
   renderDeals(); renderSearch(); renderLM(); renderDest(); renderExotic(); renderPosts(); renderHelp();
   if (state.tab === "map") renderMap(); else mapCount();
+  if (state.tab === "escale") renderEscale();
   if (state.tab === "favs") renderFavs(); else saveFavs();
 }
 
@@ -1382,8 +1459,9 @@ function setTab(t) {
   if (!$(`#tab-${t}`)) t = "deals";
   state.tab = t;
   $$(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
-  for (const id of ["deals", "search", "lm", "dest", "map", "exotic", "favs", "posts", "help"]) $(`#tab-${id}`).hidden = id !== t;
+  for (const id of ["deals", "search", "lm", "dest", "map", "escale", "exotic", "favs", "posts", "help"]) $(`#tab-${id}`).hidden = id !== t;
   if (t === "map") renderMap();
+  if (t === "escale") renderEscale();
   $("#filters").hidden = t === "help" || t === "favs";
   if (t === "favs") renderFavs();
   $("#f-sort-wrap").hidden = !["deals", "search", "lm", "dest", "exotic"].includes(t);
@@ -1391,7 +1469,17 @@ function setTab(t) {
   $("#quick-origins").hidden = t === "exotic" || t === "help" || t === "favs";
   $("#f-days-wrap").hidden = t !== "lm";
   try { localStorage.setItem("tab", t); } catch (e) { /* ignorat */ }
+  if (innerWidth <= 700) $(`.tab[data-tab="${t}"]`)?.scrollIntoView({ inline: "nearest", block: "nearest" });
 }
+// pe telefon, bara de tab-uri se derulează: estompăm marginea unde mai sunt tab-uri
+function tabsEdges() {
+  const n = $(".tabs");
+  n.classList.toggle("more-l", n.scrollLeft > 4);
+  n.classList.toggle("more-r", n.scrollLeft + n.clientWidth < n.scrollWidth - 4);
+}
+$(".tabs").addEventListener("scroll", tabsEdges, { passive: true });
+addEventListener("resize", tabsEdges);
+setTimeout(tabsEdges, 0);
 function renderOriginChips(codes) {
   const key = codes.join(",");
   if (renderOriginChips.last === key) return;
@@ -1535,6 +1623,42 @@ $("#btn-scan").addEventListener("click", async () => {
   setTimeout(loadStatus, 800);
 });
 $("#rm-close").addEventListener("click", () => $("#route-modal").close());
+/* ---------- 🎲 Surprinde-mă: o destinație la întâmplare, în bugetul ales ---------- */
+const SURP = { budget: 50, trip: "OW", last: [] };
+function surprisePool() {
+  const best = new Map();  // cel mai ieftin zbor spre fiecare destinație, ca fiecare loc să aibă aceeași șansă
+  for (const r of [...(state.search || []), ...(state.deals || []), ...(state.lm || [])]) {
+    if (r.trip !== SURP.trip || !(r.price_eur <= SURP.budget) || r.days_to_dep < 1) continue;
+    if (state.origin !== "ALL" && r.origin !== state.origin) continue;
+    if (!best.has(r.dest) || r.price_eur < best.get(r.dest).price_eur) best.set(r.dest, r);
+  }
+  return [...best.values()];
+}
+function renderSurprise() {
+  $$("#sp-budget button").forEach(b => b.classList.toggle("on", +b.dataset.v === SURP.budget));
+  $$("#sp-trip button").forEach(b => b.classList.toggle("on", b.dataset.v === SURP.trip));
+  const pool = surprisePool(), body = $("#sp-body");
+  const from = state.origin !== "ALL" ? " din " + esc(ORIGIN_NAMES[state.origin]) : "";
+  $("#sp-again").hidden = pool.length < 2;
+  if (!pool.length) {
+    body.innerHTML = `<div class="empty">Nu am găsit zboruri ${SURP.trip === "RT" ? "dus-întors" : "dus"} sub ${SURP.budget} €${from}${state.dep ? " pe datele alese" : ""}. Încearcă un buget mai mare.</div>`;
+    return;
+  }
+  const fresh = pool.filter(r => !SURP.last.includes(r.dest)), from2 = fresh.length ? fresh : pool;
+  const pick = from2[Math.floor(Math.random() * from2.length)];
+  SURP.last = [pick.dest, ...SURP.last].slice(0, Math.min(8, pool.length - 1));
+  body.innerHTML = `<p class="sp-count muted">Ales la întâmplare dintre <b>${pool.length}</b> ${pool.length === 1 ? "destinație" : "destinații"} sub ${SURP.budget} €${from}${state.dep ? ", pe datele tale" : ""}.</p><div class="sp-card">${flightCard(pick)}</div>`;
+}
+$("#btn-surprise").addEventListener("click", () => { $("#surprise-modal").showModal(); renderSurprise(); });
+$("#sp-close").addEventListener("click", () => $("#surprise-modal").close());
+$("#surprise-modal").addEventListener("click", e => {
+  if (e.target.id === "surprise-modal") { e.target.close(); return; }
+  const b = e.target.closest("#sp-budget button"), t = e.target.closest("#sp-trip button");
+  if (b) { SURP.budget = +b.dataset.v; SURP.last = []; renderSurprise(); }
+  if (t) { SURP.trip = t.dataset.v; SURP.last = []; renderSurprise(); }
+  if (e.target.closest("#sp-again")) renderSurprise();
+  if (e.target.closest("[data-route]")) e.currentTarget.close();
+});
 $("#route-modal").addEventListener("click", e => { if (e.target.id === "route-modal") e.target.close(); });
 $("#btn-theme").addEventListener("click", () => {
   const cur = document.documentElement.dataset.theme ||

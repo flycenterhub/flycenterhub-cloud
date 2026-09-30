@@ -651,8 +651,14 @@ button.btn.book{font:inherit;cursor:pointer}
 .fav-note.bad, .fav-note.warn { background: var(--hot-soft); color: var(--hot-text); }
 .card.fc.dim { opacity: .72; }
 @media (max-width: 700px) {
-  .tabs { grid-template-columns: repeat(9, 1fr) !important; }
-  .tab .t-short { font-size: 10px; letter-spacing: -.01em; }
+  /* 10 tab-uri: bara de jos se derulează orizontal, fiecare etichetă întreagă */
+  .tabs { display: flex !important; overflow-x: auto !important; overscroll-behavior-x: contain; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 1 0 auto; min-width: 56px; padding: 4px 7px !important; }
+  .tab .t-short { font-size: 10.5px; }
+  .tabs.more-r { -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent); mask-image: linear-gradient(90deg, #000 86%, transparent); }
+  .tabs.more-l { -webkit-mask-image: linear-gradient(270deg, #000 86%, transparent); mask-image: linear-gradient(270deg, #000 86%, transparent); }
+  .tabs.more-l.more-r { -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); }
 }
 
 .fav-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 4px 2px 14px; font-size: 13.5px; color: var(--text-2); }
@@ -721,3 +727,35 @@ button.btn.book{font:inherit;cursor:pointer}
   .tab { flex-direction: column; gap: 2px; padding: 6px 4px; font-size: 12.5px; }
   .tab .t-ico { font-size: 18px; }
 }
+
+/* vremea medie pe card */
+.fc-wx { font-size: 12px; line-height: 1.35; color: var(--text-2); display: flex; align-items: baseline; gap: 5px; }
+
+/* escale făcute de tine */
+.banner.warn { background: var(--hot-soft); color: var(--text); }
+.esc-direct { font-size: 12.5px; color: var(--muted); margin-top: -4px; }
+.esc-direct s { text-decoration-thickness: 1.5px; }
+.esc-legs { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.esc-legs li { display: grid; grid-template-columns: 22px 1fr; align-items: start; column-gap: 8px; row-gap: 5px; }
+.esc-legs li > .book-form, .esc-legs li > .book { grid-column: 2; justify-self: start; }
+.esc-n { width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--text); font-size: 12px; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center; }
+.esc-leg { display: flex; flex-direction: column; min-width: 0; font-size: 13px; line-height: 1.35; }
+.esc-leg > span { color: var(--text-2); font-size: 12.5px; }
+.esc-leg .num { white-space: nowrap; }
+.esc-more { font-size: 12px; color: var(--text-2); }
+.esc-legs li.esc-stop { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); padding: 3px 0 3px 30px;
+  border-left: 2px dashed var(--border); margin-left: 10px; }
+.esc-legs .book-form, .esc-legs .book { margin: 0; }
+.esc-legs .btn.book { padding: 5px 12px; }
+
+/* 🎲 Surprinde-mă */
+.sp-modal { width: min(440px, calc(100vw - 24px)); }
+.sp-opts { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 18px 10px; }
+.sp-opts .seg button { padding: 7px 10px; }
+#sp-body { padding: 0 18px; }
+.sp-count { font-size: 12.5px; margin: 2px 0 10px; }
+.sp-card .card.fc { width: 100%; max-width: none; margin: 0; }
+.sp-foot { padding: 12px 18px 18px; display: flex; justify-content: center; }
+.sp-foot .btn { min-width: 200px; justify-content: center; }
+.sp-card .fc-photo { height: 190px; }

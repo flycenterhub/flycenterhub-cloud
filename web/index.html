@@ -29,6 +29,7 @@
       <div id="status" class="status-pill" role="status" aria-live="polite">Se încarcă…</div>
       <button id="btn-quick" class="btn ghost" title="Verificare rapidă (~2 minute): Aviasales și cele mai mici prețuri Ryanair spre toate destinațiile">⚡ Rapid</button>
       <button id="btn-scan" class="btn" title="Scanare completă (~30 de minute): fiecare zi, pe toate rutele Wizz Air, Ryanair și Aviasales">Scanează acum</button>
+      <button id="btn-surprise" class="btn ghost" title="O destinație la întâmplare, în bugetul tău">🎲 Surprinde-mă</button>
       <button id="btn-theme" class="btn ghost icon" title="Temă luminoasă / întunecată" aria-label="Schimbă tema">◐</button>
     </div>
   </div>
@@ -42,6 +43,7 @@
     <button role="tab" data-tab="lm" title="Zboruri cu plecare în zilele următoare" class="tab"><span class="t-ico">⏰</span><span class="t-lbl">Last minute</span><span class="t-short">Last min.</span> <span class="count" id="c-lm"></span></button>
     <button role="tab" data-tab="dest" title="Toate destinațiile, din fiecare oraș" class="tab"><span class="t-ico">🌍</span><span class="t-lbl">Destinații</span><span class="t-short">Destinații</span> <span class="count" id="c-dest"></span></button>
     <button role="tab" data-tab="map" title="Harta cu prețuri: unde poți zbura ieftin" class="tab"><span class="t-ico">🗺️</span><span class="t-lbl">Hartă</span><span class="t-short">Hartă</span> <span class="count" id="c-map"></span></button>
+    <button role="tab" data-tab="escale" title="Escale făcute de tine: două bilete low-cost, mai ieftine decât zborul direct" class="tab"><span class="t-ico">🔀</span><span class="t-lbl">Escale</span><span class="t-short">Escale</span> <span class="count" id="c-escale"></span></button>
     <button role="tab" data-tab="exotic" title="Destinații exotice din Budapesta" class="tab"><span class="t-ico">🌴</span><span class="t-lbl">Exotice</span><span class="t-short">Exotice</span> <span class="count" id="c-exotic"></span></button>
     <button role="tab" data-tab="favs" title="Zborurile salvate de tine" class="tab"><span class="t-ico">❤️</span><span class="t-lbl">Favorite</span><span class="t-short">Favorite</span> <span class="count" id="c-favs"></span></button>
     <button role="tab" data-tab="posts" title="Oferte de pe site-urile de specialitate" class="tab"><span class="t-ico">📰</span><span class="t-lbl">Site-uri</span><span class="t-short">Site-uri</span> <span class="count" id="c-posts"></span></button>
@@ -123,6 +125,7 @@
   <section id="tab-lm" class="panel" hidden></section>
   <section id="tab-dest" class="panel" hidden></section>
   <section id="tab-map" class="panel" hidden></section>
+  <section id="tab-escale" class="panel" hidden></section>
   <section id="tab-exotic" class="panel" hidden></section>
   <section id="tab-favs" class="panel" hidden></section>
   <section id="tab-posts" class="panel" hidden></section>
@@ -138,6 +141,26 @@
     <button class="btn ghost icon" id="rm-close" aria-label="Închide">✕</button>
   </div>
   <div id="rm-body"></div>
+</dialog>
+
+<dialog id="surprise-modal" class="sp-modal" aria-labelledby="sp-title">
+  <div class="modal-head">
+    <div>
+      <h2 id="sp-title">🎲 Surprinde-mă</h2>
+      <p class="sub">Tu alegi bugetul, noi alegem destinația.</p>
+    </div>
+    <button class="btn ghost icon" id="sp-close" aria-label="Închide">✕</button>
+  </div>
+  <div class="sp-opts">
+    <div class="seg" id="sp-budget" role="group" aria-label="Buget">
+      <button data-v="30">sub 30 €</button><button data-v="50" class="on">sub 50 €</button><button data-v="100">sub 100 €</button><button data-v="200">sub 200 €</button>
+    </div>
+    <div class="seg" id="sp-trip" role="group" aria-label="Tip bilet">
+      <button data-v="OW" class="on">Doar dus</button><button data-v="RT">Dus-întors</button>
+    </div>
+  </div>
+  <div id="sp-body"></div>
+  <div class="sp-foot"><button class="btn" id="sp-again" type="button">🎲 Altă destinație</button></div>
 </dialog>
 
 <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
