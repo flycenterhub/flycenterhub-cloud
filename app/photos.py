@@ -5,6 +5,7 @@ Se actualizează după scanări doar pentru destinațiile noi; rezultatul stă �
 """
 import json
 import logging
+import os
 import re
 import urllib.parse
 
@@ -357,13 +358,66 @@ def public(db):
 
 
 def sync_from_site(db):
-    """În cloud: preia pozele de pe site-ul publicat de laptop, ca alegerile tale să nu se piardă."""
+    """În cloud: preia pozele de pe site-ul publicat de laptop (inclusiv cele încărcate de tine), ca să nu se piardă."""
     try:
         data = net.get_json("https://flycenterhub.github.io/data/photos.json", headers=UA, timeout=30)
         if isinstance(data, dict) and len(data) > 100:
             db.set_kv("photo_custom", data)
+            for f in data.values():
+                if isinstance(f, str) and f.startswith(LOCAL):
+                    name = local_name(f)
+                    path = os.path.join(local_dir(), name)
+                    if not os.path.exists(path):
+                        os.makedirs(local_dir(), exist_ok=True)
+                        with open(path, "wb") as out:
+                            out.write(net.request(f"https://flycenterhub.github.io/photos/{name}", timeout=60))
     except Exception as e:
         log.warning("Poze de pe site: %s", e)
+
+
+# ---------- poze încărcate de pe laptop: web/photos/COD.jpg, în kv apar ca „local:COD.jpg?v=...” ----------
+LOCAL = "local:"
+
+
+def local_dir():
+    from . import config
+    return os.path.join(config.WEB_DIR, "photos")
+
+
+def local_name(f):
+    return f[len(LOCAL):].split("?")[0]
+
+
+def save_upload(db, code, data_url):
+    """Poza trimisă din pagina „Poze” (JPEG deja micșorat în browser) -> web/photos/COD.jpg."""
+    import base64
+    import time
+    m = re.match(r"data:image/(jpeg|jpg|png|webp);base64,(.+)$", data_url or "", re.S)
+    if not m:
+        return None
+    raw = base64.b64decode(m.group(2))
+    if len(raw) > 3_000_000:
+        return None
+    ext = "jpg" if m.group(1) in ("jpeg", "jpg") else m.group(1)
+    os.makedirs(local_dir(), exist_ok=True)
+    name = f"{re.sub(r'[^A-Z0-9]', '', code.upper())}.{ext}"
+    with open(os.path.join(local_dir(), name), "wb") as f:
+        f.write(raw)
+    ref = f"{LOCAL}{name}?v={int(time.time())}"
+    set_custom(db, code, ref)
+    return ref
+
+
+def local_files(db):
+    """Pozele încărcate de tine care sunt folosite acum (pentru publicarea pe site): {cale: bytes}."""
+    out = {}
+    for f in (public(db) or {}).values():
+        if isinstance(f, str) and f.startswith(LOCAL):
+            path = os.path.join(local_dir(), local_name(f))
+            if os.path.exists(path):
+                with open(path, "rb") as fh:
+                    out[f"photos/{local_name(f)}"] = fh.read()
+    return out
 
 
 # ---------- pagina „Poze” (doar pe laptop): verifici și schimbi poza fiecărei destinații ----------

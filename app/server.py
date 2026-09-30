@@ -57,6 +57,12 @@ def make_handler(engine):
                 if u.path == "/api/photos":
                     from . import photos
                     return self._json(photos.public(db))
+                if u.path == "/api/photos-admin":
+                    from . import photos
+                    return self._json(photos.admin_list(db))
+                if u.path == "/api/photo-search":
+                    from . import photos
+                    return self._json(photos.search(qs.get("q", "")))
                 if u.path == "/api/deals":
                     return self._json(queries.deals(db, cfg["origins"], exact))
                 if u.path == "/api/route-deals":
@@ -101,6 +107,35 @@ def make_handler(engine):
                     else:
                         threading.Thread(target=engine.full_scan, args=(only.split(",") if only else None,),
                                          kwargs={"manual": True}, daemon=True).start()
+                    return self._json({"ok": True})
+                if u.path == "/api/photo-set":
+                    from . import photos
+                    n = int(self.headers.get("Content-Length") or 0)
+                    body = json.loads(self.rfile.read(n).decode("utf-8") or "{}")
+                    code = (body.get("code") or "").upper()
+                    if not code:
+                        return self._json({"ok": False, "message": "Lipsește destinația"})
+                    if not body.get("file"):
+                        photos.set_custom(engine.db, code, "")
+                        return self._json({"ok": True, "reset": True})
+                    info = photos.file_info(photos.parse_file(body["file"]))
+                    if not info:
+                        return self._json({"ok": False, "message": "Nu găsesc poza pe Wikimedia Commons. Lipește linkul paginii pozei (commons.wikimedia.org/wiki/File:...)."})
+                    photos.set_custom(engine.db, code, info["file"])
+                    return self._json({"ok": True, **info})
+                if u.path == "/api/photo-upload":
+                    from . import photos
+                    n = int(self.headers.get("Content-Length") or 0)
+                    if n > 6_000_000:
+                        return self._json({"ok": False, "message": "Poza e prea mare"})
+                    body = json.loads(self.rfile.read(n).decode("utf-8") or "{}")
+                    code = (body.get("code") or "").upper()
+                    ref = photos.save_upload(engine.db, code, body.get("data")) if code else None
+                    if not ref:
+                        return self._json({"ok": False, "message": "Nu am putut salva poza. Alege un fișier JPG sau PNG."})
+                    return self._json({"ok": True, "file": ref})
+                if u.path == "/api/publish":
+                    threading.Thread(target=engine.publish_site, args=(True,), daemon=True).start()
                     return self._json({"ok": True})
                 if u.path == "/api/verify":
                     from . import verify

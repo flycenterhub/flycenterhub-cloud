@@ -124,6 +124,7 @@ def build(engine):
     for name in WEB_FILES:
         with open(os.path.join(config.WEB_DIR, name), "rb") as f:
             files[name] = f.read()
+    files.update(photos.local_files(db))  # pozele încărcate de tine de pe laptop
     return files
 
 
