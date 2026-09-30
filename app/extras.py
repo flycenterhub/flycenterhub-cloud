@@ -216,9 +216,127 @@ def public_connections(db, cfg):
     """Pentru site: combinațiile + numele locurilor."""
     from .fmt import ORIGIN_NAMES, country_ro
     rows = connections(db, cfg)
-    codes = {c for r in rows for c in (r["origin"], r["hub"], r["dest"])}
+    jaws = open_jaws(db, cfg)
+    codes = ({c for r in rows for c in (r["origin"], r["hub"], r["dest"])}
+             | {c for r in jaws for c in (r["origin"], r["dest"], r["back"])})
     names = {}
     for p in db.q("SELECT code, name, country FROM places"):
         if p["code"] in codes:
             names[p["code"]] = [ORIGIN_NAMES.get(p["code"], (p["name"] or p["code"]).strip()), country_ro((p["country"] or "").strip())]
-    return {"at": (db.get_kv("hub_fares") or {}).get("at"), "rows": rows, "places": names}
+    return {"at": (db.get_kv("hub_fares") or {}).get("at"), "rows": rows, "exotic": jaws, "places": names}
+
+
+# ---------- exotice: dus într-un oraș, întors din altul apropiat (ex. Budapesta → Hanoi, Ho Chi Minh → Budapesta) ----------
+AVIA = "https://api.travelpayouts.com/aviasales/v3/prices_for_dates"
+JAW_KM = 2000          # distanța maximă dintre orașul în care ajungi și cel din care te întorci
+
+
+def _exotic(db, cfg):
+    """(orașele de plecare pentru exotice, {destinații exotice}, coordonate)."""
+    from .queries import exotic_origins
+    from .regions import region_of
+    origins = exotic_origins(cfg)
+    pl = {p["code"]: p for p in db.q("SELECT code, cc, country FROM places")}
+    ph = ",".join("?" * len(origins))
+    dests = {r["dest"] for r in db.q(f"SELECT DISTINCT dest FROM fares WHERE origin IN ({ph}) AND dep_date>=?",
+                                     (*origins, dt.date.today().isoformat()))}
+    ex = {d for d in dests if d not in origins and
+          region_of(d, (pl.get(d) or {}).get("cc"), ((pl.get(d) or {}).get("country") or "").strip())}
+    return origins, ex, db.get_kv("coords") or {}
+
+
+def scan_exotic_back(cfg, db, progress, stop):
+    """Zborurile dus (fără întors) din orașele exotice spre Budapesta / București -> kv „exotic_back”."""
+    from .sources import aviasales
+    from .sources.common import date_range_end
+    token = (cfg["sources"].get("aviasales") or {}).get("token", "").strip()
+    if not token:
+        return {"error": "fără token"}
+    origins, ex, coords = _exotic(db, cfg)
+    ph = ",".join("?" * len(origins))
+    arrive = {r["dest"] for r in db.q(f"SELECT DISTINCT dest FROM fares WHERE origin IN ({ph}) AND ret_date=''",
+                                      tuple(origins))} & ex
+    # orașe din care merită căutat întorsul: aproape (≤ JAW_KM) de un oraș în care ajungi cu zbor dus
+    cands = sorted(e for e in ex if e in coords and
+                   any(a != e and a in coords and _km(coords[a], coords[e]) <= JAW_KM for a in arrive))
+    airlines = aviasales._load_names(db)
+    cc_of = {r["code"]: (r.get("cc"), (r.get("country") or "").strip()) for r in db.q("SELECT code, cc, country FROM places")}
+    exc = cfg.get("exotic") or {}
+    end = date_range_end(max(cfg["months_ahead"], exc.get("months_ahead", 0))).isoformat()
+    delay = max(0.8, float(cfg.get("request_delay_seconds", 0.8)))
+    rows, fails, total = [], 0, len(cands) * len(origins)
+    for i, e in enumerate(cands):
+        for j, o in enumerate(origins):
+            if stop.is_set():
+                return {"stopped": True, "fares": len(rows)}
+            progress(f"Exotice întors {e}→{o}", i * len(origins) + j, total)
+            q = (f"?origin={e}&destination={o}&one_way=true&sorting=price&direct=false&limit=1000&page=1"
+                 f"&currency=eur&market=ro")
+            try:
+                items = net.get_json(AVIA + q, headers={"X-Access-Token": token}, retries=2).get("data") or []
+            except Exception as err:
+                fails += 1
+                log.warning("Exotice întors %s→%s: %s", e, o, err)
+                if fails > 20:
+                    break
+                time.sleep(delay * 3)
+                continue
+            for it in items:
+                r = aviasales._row(dict(it, destination=o), e, True, end, cfg["round_trip"], exc, cc_of, airlines)
+                if r:
+                    rows.append([e, o, r["dep_date"], r["dep_time"], round(r["price_eur"], 2), r["airline"], r["link"]])
+            time.sleep(delay)
+    if rows:
+        db.set_kv("exotic_back", {"at": now_str(), "rows": rows})
+    return {"cities": len(cands), "fares": len(rows)}
+
+
+def open_jaws(db, cfg, per_pair=2, cap=6000):
+    """Dus spre A + întors din B (aproape de A), mai ieftin decât dus-întorsul clasic spre A (sau fără dus-întors)."""
+    back = (db.get_kv("exotic_back") or {}).get("rows") or []
+    if not back:
+        return []
+    origins, ex, coords = _exotic(db, cfg)
+    exc = cfg.get("exotic") or {}
+    lo, hi = int(exc.get("min_nights", 5)), int(exc.get("max_nights", 28))
+    today = (dt.date.today() + dt.timedelta(days=2)).isoformat()
+    ph = ",".join("?" * len(origins))
+    outs = [f for f in db.q(f"""SELECT origin, dest, dep_date, dep_time, price_eur, airline, link FROM fares
+                                WHERE origin IN ({ph}) AND ret_date='' AND dep_date>=? AND price_eur>0""", (*origins, today))
+            if f["dest"] in ex and f["dest"] in coords]
+    rt = {}
+    for f in db.q(f"SELECT origin, dest, MIN(price_eur) p FROM fares WHERE origin IN ({ph}) AND ret_date<>'' "
+                  f"AND julianday(ret_date)-julianday(dep_date) BETWEEN ? AND ? GROUP BY origin, dest", (*origins, lo, hi)):
+        rt[(f["origin"], f["dest"])] = f["p"]
+    by_o = {}
+    for b in back:
+        if b[0] in coords:
+            by_o.setdefault(b[1], []).append(b)
+    best = {}
+    for f in outs:
+        o, a = f["origin"], f["dest"]
+        d1 = dt.date.fromisoformat(f["dep_date"])
+        for e, _, day, t2, p2, air2, link2 in by_o.get(o, []):
+            if e == a:
+                continue
+            n = (dt.date.fromisoformat(day) - d1).days
+            if n < lo or n > hi:
+                continue
+            km = _km(coords[a], coords[e])
+            if km > JAW_KM:
+                continue
+            total = round(f["price_eur"] + p2, 2)
+            ref = rt.get((o, a))
+            if ref is not None and total >= ref:
+                continue
+            best.setdefault((o, a, e), []).append({
+                "origin": o, "dest": a, "back": e, "dep_date": f["dep_date"], "ret_date": day, "nights": n,
+                "price_eur": total, "rt_eur": ref, "km": round(km),
+                "l1": [f["dep_date"], f["dep_time"] or "", round(f["price_eur"], 2), f["airline"] or "", f["link"]],
+                "l2": [day, t2, p2, air2, link2]})
+    out = []
+    for cands in best.values():
+        cands.sort(key=lambda c: c["price_eur"])
+        out += cands[:per_pair]
+    out.sort(key=lambda c: c["price_eur"])
+    return out[:cap]

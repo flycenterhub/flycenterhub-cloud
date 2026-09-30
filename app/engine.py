@@ -97,6 +97,18 @@ class Engine:
                     try:
                         results[name] = fn(cfg, self.db, scan_id,
                                            lambda s, d=None, t=None, n=name: self._prog(n, s, d, t), self.stop)
+                        if name == "aviasales" and not quick and not only:
+                            # după Aviasales: zborurile dus din orașele exotice spre casă (dus într-un oraș, întors din altul)
+                            from . import extras
+                            try:
+                                results["exotic_back"] = extras.scan_exotic_back(
+                                    cfg, self.db, lambda s, d=None, t=None: self._prog("exotice-intors", s, d, t), self.stop)
+                            except Exception as e:
+                                log.warning("Exotice întors: %s", e)
+                            finally:
+                                self.progress.pop("exotice-intors", None)
+                                if "exotice-intors" in self.progress_counts:
+                                    self.progress_counts["exotice-intors"] = (self.progress_counts["exotice-intors"][1],) * 2
                         if name == "ryanair" and not quick and not only:
                             # după Ryanair: zborurile din hub-uri, pentru escalele făcute de tine (extras.py)
                             from . import extras
@@ -427,7 +439,10 @@ class Engine:
         while not self.stop.is_set():
             now = dt.datetime.now()
             try:
-                fx.refresh()  # cursul BNR: verificat cel mult o dată pe oră, actualizat când BNR publică unul nou
+                # cursul BNR: verificat din oră în oră (la 10 minute după ora 13, până apare cel nou);
+                # când BNR publică un curs nou, site-ul public se actualizează imediat cu prețurile în lei noi
+                if fx.refresh() and not self.running:
+                    threading.Thread(target=self.publish_site, args=(True,), daemon=True).start()
                 # prima publicare a site-ului public, imediat ce există tokenul GitHub
                 ps = self.cfg.get("public_site") or {}
                 if (ps.get("github_token") or "").strip() and not self.running and                         not (self.db.get_kv("public_site") or {}).get("last_publish") and                         (self.db.get_kv("public_site") or {}).get("last_error_at", "") <                         (now - dt.timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S"):
