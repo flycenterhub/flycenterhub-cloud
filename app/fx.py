@@ -62,7 +62,12 @@ def refresh(force=False):
             _load_cache()
         now = time.time()
         changed = False
-        if force or now - _checked["bnr"] > 3600:
+        import datetime as _dt
+        t = _dt.datetime.now()
+        # după ora 13 (când BNR publică), până apare cursul zilei, verificăm la 10 minute
+        every = 600 if 12 <= t.hour < 17 and t.weekday() < 5 and _bnr_date != t.date().isoformat() else 3600
+        new_bnr = False
+        if force or now - _checked["bnr"] > every:
             _checked["bnr"] = now
             try:
                 xml = net.get_text(BNR_URL, timeout=20, retries=2)
@@ -75,6 +80,7 @@ def refresh(force=False):
                 date = re.search(r'<Cube date="([\d-]+)"', xml)
                 if rates.get("EUR"):
                     if date and date.group(1) != _bnr_date:
+                        new_bnr = _bnr_date is not None
                         log.info("Curs BNR nou (%s): 1 EUR = %.4f lei", date.group(1), rates["EUR"])
                     _ron_per.update(rates)
                     _bnr_date = date.group(1) if date else _bnr_date
@@ -93,6 +99,7 @@ def refresh(force=False):
                 log.warning("Nu am putut lua cursul BCE: %s", e)
         if changed:
             _save_cache()
+        return new_bnr
 
 
 def eur_ron():
