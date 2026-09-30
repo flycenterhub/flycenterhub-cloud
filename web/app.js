@@ -982,7 +982,7 @@ function renderStatus() {
   }
   const f = st.fx;
   $("#fx-line").innerHTML = f?.eur_ron
-    ? `<span class="fx-lbl">Curs ${f.source}${f.date ? " · " + fmtDate(f.date, false) : ""}</span> 1 € = ${f.eur_ron.toLocaleString("ro-RO", { minimumFractionDigits: 4 })} lei` +
+    ? `<span class="fx-lbl" title="${f.source === "BNR" ? "Cursul oficial BNR în vigoare. BNR publică cursul nou în fiecare zi lucrătoare pe la ora 13:00; site-ul îl preia automat." : ""}">Curs ${f.source}${f.date ? " · " + (f.date === todayIso() ? "azi" : "în vigoare, din " + fmtDate(f.date, false)) : ""}</span> 1 € = ${f.eur_ron.toLocaleString("ro-RO", { minimumFractionDigits: 4 })} lei` +
       (f.huf100_ron ? `<span class="m-extra"> · 100 Ft = ${f.huf100_ron.toLocaleString("ro-RO", { minimumFractionDigits: 4 })} lei</span>` : "")
     : "";
   const ps = st.public_site;
@@ -1251,9 +1251,72 @@ function escCard(r) {
     ${s1 === "wizzair" ? `<div class="fc-fee" title="Taxa de administrare Wizz Air, 8–13 € de persoană pe zbor">+ taxa Wizz Air la plată pe primul zbor: 8–13 €</div>` : ""}
   </article>`;
 }
+/* exotice: dus într-un oraș, întors din altul apropiat */
+let ESC_MODE = "eu";
+try { ESC_MODE = localStorage.getItem("escMode") === "ex" ? "ex" : "eu"; } catch (e) { /* ignorat */ }
+function jawRows() {
+  const P = ESC?.places || {};
+  return (ESC?.exotic || []).map(c => ({ ...c, trip: "RT", source: "aviasales",
+    origin_name: ORIGIN_NAMES[c.origin] || P[c.origin]?.[0] || c.origin, dest_name: P[c.dest]?.[0] || c.dest,
+    back_name: P[c.back]?.[0] || c.back, country: P[c.dest]?.[1] || "", back_country: P[c.back]?.[1] || "" }));
+}
+function jawCard(r) {
+  const [d1, t1, p1, a1, link1] = r.l1, [d2, t2, p2, a2, link2] = r.l2;
+  const save = r.rt_eur != null ? r.rt_eur - r.price_eur : null;
+  const km = r.km.toLocaleString("ro-RO");
+  const between = r.km < 60 ? `Te întorci de pe alt aeroport din zonă (${esc(r.back_name)})`
+    : `De la ${esc(r.dest_name)} la ${esc(r.back_name)} (~${km} km) ajungi pe cont propriu (zbor scurt, tren sau autobuz), <b>neinclus în preț</b>`;
+  return `<article class="card fc esc">
+    ${fcPhoto(r)}
+    <div class="fc-head">
+      <div class="fc-route">${esc(r.origin_name)}<span class="arrow">→</span>${esc(r.dest_name)}</div>
+      <div class="fc-head-r">${save >= 5 ? `<span class="fc-disc num" title="Mai ieftin decât cel mai ieftin dus-întors clasic la ${esc(r.dest_name)}">−${Math.round(save)} €</span>` : ""}</div>
+    </div>
+    <div class="fc-place">${esc(r.country)}${r.country ? " · " : ""}întors din ${esc(r.back_name)}${r.back_country && r.back_country !== r.country ? ", " + esc(r.back_country) : ""}</div>
+    <div class="fc-price"><span class="price num">${eur(r.price_eur)}</span>${leiSpan(r)}</div>
+    <div class="esc-direct">${r.rt_eur != null ? `Dus-întors clasic la ${esc(r.dest_name)}: de la <s class="num">${eur(r.rt_eur)}</s>` : `Nu am găsit dus-întors clasic la ${esc(r.dest_name)}`}</div>
+    ${fcWeather(r, d1)}
+    <div class="fc-meta"><span class="fc-tag unv" title="Prețuri găsite recent în căutările altor călători; confirmă-le la „Rezervă”">De verificat</span></div>
+    <ol class="esc-legs">
+      <li><span class="esc-n">1</span><div class="esc-leg"><b>${esc(r.origin_name)} → ${esc(r.dest_name)}</b><span>${fmtDate(d1)}${t1 ? ", " + t1 : ""} · ${esc(a1)} · <b class="num">${eur(p1)}</b></span></div>${bookBtn(link1, a1)}</li>
+      <li class="esc-stop">🧳 ${r.nights} nopți · ${between}</li>
+      <li><span class="esc-n">2</span><div class="esc-leg"><b>${esc(r.back_name)} → ${esc(r.origin_name)}</b><span>${fmtDate(d2)}${t2 ? ", " + t2 : ""} · ${esc(a2)} · <b class="num">${eur(p2)}</b></span></div>${bookBtn(link2, a2)}</li>
+    </ol>
+    ${r.more?.length ? `<div class="esc-more">📅 Alte date, de la ${eur(r.price_eur)} în sus: ${[...new Set(r.more)].sort().map(d => fmtDate(d, false)).join(", ")}</div>` : ""}
+  </article>`;
+}
+function escModeSeg() {
+  return `<div class="esc-mode seg" role="group" aria-label="Tip escale">
+    <button type="button" data-escmode="eu" class="${ESC_MODE === "eu" ? "on" : ""}">✈️ Europa · două bilete</button>
+    <button type="button" data-escmode="ex" class="${ESC_MODE === "ex" ? "on" : ""}">🌴 Exotice · întors din alt oraș</button>
+  </div>`;
+}
+function renderJaws(el) {
+  const all = jawRows();
+  const w = datesInvalid() ? null : dateWindow();
+  const q = state.q.trim().toLowerCase(), max = parseFloat(state.max);
+  const rows = all.filter(r => (state.origin === "ALL" || r.origin === state.origin) && (!max || r.price_eur <= max) &&
+    (!q || `${r.dest_name} ${r.country} ${r.dest} ${r.back_name} ${r.back_country} ${r.back}`.toLowerCase().includes(q)) &&
+    (!w || (r.dep_date >= w.depFrom && r.dep_date <= w.depTo && (!w.retFrom || (r.ret_date >= w.retFrom && r.ret_date <= w.retTo)))))
+    .sort((a, b) => a.price_eur - b.price_eur);
+  const byRoute = new Map();
+  for (const r of rows) {
+    const k = `${r.origin}|${r.dest}|${r.back}`;
+    if (byRoute.has(k)) byRoute.get(k).more.push(r.dep_date); else byRoute.set(k, { ...r, more: [] });
+  }
+  const cards = [...byRoute.values()];
+  const head = escModeSeg() + `<div class="banner info">🌴 <div><b>Dus într-un oraș, întors din altul:</b> zbori, de exemplu, la Hanoi și te întorci din Ho Chi Minh, sau la Bangkok și înapoi din Singapore. Vezi două locuri într-o excursie și adesea plătești mai puțin decât un dus-întors clasic. Arătăm doar orașe la cel mult 2.000 km unul de altul.</div></div>
+    <div class="banner warn">⚠️ <div><b>Sunt două bilete dus separate</b>, iar prețurile sunt găsite recent în căutările altor călători: confirmă-le la „Rezervă”. Drumul dintre cele două orașe îl faci pe cont propriu și <b>nu e inclus în preț</b>.</div></div>`
+    + datesBanner("Combinațiile sunt");
+  if (!all.length) { el.innerHTML = head + `<div class="empty">Combinațiile apar după următoarea scanare completă.</div>`; return; }
+  if (!rows.length) { el.innerHTML = head + `<div class="empty">Nicio combinație pentru filtrele alese.</div>`; return; }
+  el.innerHTML = head + shelves("escale", cards, jawCard, ["origin", "month", "country"], "combinații");
+  initShelves(el);
+}
 async function renderEscale() {
   const el = $("#tab-escale");
   if (!ESC) { el.innerHTML = `<div class="empty">Caut combinațiile…</div>`; await loadEscale(); if (state.tab !== "escale") return; }
+  if (ESC_MODE === "ex") { renderJaws(el); return; }
   const all = escRows();
   const w = datesInvalid() ? null : dateWindow();
   const q = state.q.trim().toLowerCase(), max = parseFloat(state.max);
@@ -1269,7 +1332,7 @@ async function renderEscale() {
   const cards = [...byRoute.values()];
   const c = $("#c-escale"); if (c) c.textContent = all.length ? cards.length : "";
 
-  const head = `<div class="banner info">🔀 <div><b>Escale făcute de tine:</b> două zboruri low-cost separate, prin aeroporturile mari Ryanair (Bergamo, Barcelona, Charleroi…), mai ieftine decât zborul direct sau spre locuri unde nu există zbor direct. Prețuri pentru un drum (doar dus).</div></div>
+  const head = escModeSeg() + `<div class="banner info">🔀 <div><b>Escale făcute de tine:</b> două zboruri low-cost separate, prin aeroporturile mari Ryanair (Bergamo, Barcelona, Charleroi…), mai ieftine decât zborul direct sau spre locuri unde nu există zbor direct. Prețuri pentru un drum (doar dus).</div></div>
     <div class="banner warn">⚠️ <div><b>Sunt bilete separate.</b> Dacă primul zbor întârzie, al doilea nu te așteaptă și nu primești despăgubire. Recomandat doar cu bagaj de mână. Am ales numai combinații cu <b>peste 3 ore între zboruri</b> sau cu o noapte la escală.</div></div>`
     + (state.dep && !datesInvalid() ? `<div class="banner">📅 <div>Escalele sunt doar dus: se arată cele cu plecare pe datele tale (<b>${fmtDate(w.depFrom, false)}${w.depTo !== w.depFrom ? " – " + fmtDate(w.depTo, false) : ""}</b>). <button class="linkish" data-clear-dates>Arată toate datele</button></div></div>` : "");
   if (!all.length) { el.innerHTML = head + `<div class="empty">Combinațiile apar după următoarea scanare completă.</div>`; return; }
@@ -1588,6 +1651,8 @@ document.addEventListener("click", async e => {
   if (sn) { const row = sn.closest(".shelf").querySelector(".shelf-row"); row.scrollBy({ left: +sn.dataset.shelfNav * row.clientWidth * 0.9, behavior: "smooth" }); return; }
   const st = e.target.closest("[data-shelf-toggle]");
   if (st) { toggleShelf(st.dataset.shelfToggle); return; }
+  const em = e.target.closest("[data-escmode]");
+  if (em) { ESC_MODE = em.dataset.escmode; try { localStorage.setItem("escMode", ESC_MODE); } catch (err) { /* ignorat */ } renderEscale(); return; }
   const exr = e.target.closest("[data-exregion]");
   if (exr) { state.exRegion = exr.dataset.exregion; renderExotic(); return; }
   const t = e.target.closest("[data-tab]");
