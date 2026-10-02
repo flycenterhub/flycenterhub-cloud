@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
+<title>FlyCenterHub S.R.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><img src="logo.svg" alt="" width="44" height="44"></span>
+      <div>
+        <h1 class="brand-name"><span class="script">FlyCenterHub</span> <span class="sr">S.R.</span></h1>
+        <p class="sub cities" id="cities-line">Timișoara · Budapesta · Oradea · Cluj-Napoca</p>
+        <p class="sub fx" id="fx-line"></p>
+        <p class="sub fx" id="public-line"></p>
+      </div>
+    </div>
+    <div class="status-area">
+      <div id="status" class="status-pill" role="status" aria-live="polite">Se încarcă…</div>
+      <button id="btn-quick" class="btn ghost" title="Verificare rapidă (~2 minute): Aviasales și cele mai mici prețuri Ryanair spre toate destinațiile">⚡ Rapid</button>
+      <button id="btn-scan" class="btn" title="Scanare completă (~30 de minute): fiecare zi, pe toate rutele Wizz Air, Ryanair și Aviasales">Scanează acum</button>
+      <button id="btn-surprise" class="btn ghost" title="O destinație la întâmplare, în bugetul tău">🎲 Surprinde-mă</button>
+      <button id="btn-theme" class="btn ghost icon" title="Temă luminoasă / întunecată" aria-label="Schimbă tema">◐</button>
+    </div>
+  </div>
+  <div class="scanbar" id="scanbar" hidden><div class="fill"></div></div>
+</header>
+
+<main class="wrap">
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="deals" title="Cele mai bune oferte" class="tab active"><span class="t-ico">🔥</span><span class="t-lbl">Oferte</span><span class="t-short">Oferte</span> <span class="count" id="c-deals"></span></button>
+    <button role="tab" data-tab="search" title="Cel mai ieftin zbor spre fiecare destinație, filtrat pe datele tale" class="tab"><span class="t-ico">📅</span><span class="t-lbl">Caută pe date</span><span class="t-short">Caută</span> <span class="count" id="c-search"></span></button>
+    <button role="tab" data-tab="lm" title="Zboruri cu plecare în zilele următoare" class="tab"><span class="t-ico">⏰</span><span class="t-lbl">Last minute</span><span class="t-short">Last min.</span> <span class="count" id="c-lm"></span></button>
+    <button role="tab" data-tab="dest" title="Toate destinațiile, din fiecare oraș" class="tab"><span class="t-ico">🌍</span><span class="t-lbl">Destinații</span><span class="t-short">Destinații</span> <span class="count" id="c-dest"></span></button>
+    <button role="tab" data-tab="map" title="Harta cu prețuri: unde poți zbura ieftin" class="tab"><span class="t-ico">🗺️</span><span class="t-lbl">Hartă</span><span class="t-short">Hartă</span> <span class="count" id="c-map"></span></button>
+    <button role="tab" data-tab="escale" title="Escale făcute de tine: două bilete low-cost, mai ieftine decât zborul direct" class="tab"><span class="t-ico">🔀</span><span class="t-lbl">Escale</span><span class="t-short">Escale</span> <span class="count" id="c-escale"></span></button>
+    <button role="tab" data-tab="exotic" title="Destinații exotice din Budapesta" class="tab"><span class="t-ico">🌴</span><span class="t-lbl">Exotice</span><span class="t-short">Exotice</span> <span class="count" id="c-exotic"></span></button>
+    <button role="tab" data-tab="favs" title="Zborurile salvate de tine" class="tab"><span class="t-ico">❤️</span><span class="t-lbl">Favorite</span><span class="t-short">Favorite</span> <span class="count" id="c-favs"></span></button>
+    <button role="tab" data-tab="help" title="Cum funcționează platforma" class="tab"><span class="t-ico">ℹ️</span><span class="t-lbl">Info</span><span class="t-short">Info</span></button>
+  </nav>
+
+  <div class="quick-origins" id="quick-origins" role="group" aria-label="Oraș de plecare"></div>
+  <section class="filters" id="filters">
+    <button class="filters-toggle" id="filters-toggle" type="button" aria-expanded="false">
+      <span>⚙️ Filtre, date și sortare</span><span class="ft-sum" id="filters-sum"></span><span class="ft-arrow">▾</span>
+    </button>
+    <fieldset class="datebox" id="f-dates">
+      <legend>📅 Datele călătoriei</legend>
+      <label class="field"><span>Data plecării</span><input id="f-dep" type="date"></label>
+      <label class="field"><span>Data întoarcerii <em>(opțional)</em></span><input id="f-ret" type="date"></label>
+      <label class="field"><span>Flexibil</span>
+        <select id="f-flex">
+          <option value="0">Exact</option>
+          <option value="1">± 1 zi</option>
+          <option value="2">± 2 zile</option>
+          <option value="3">± 3 zile</option>
+          <option value="7">± 7 zile</option>
+        </select>
+      </label>
+      <div class="field pax-field"><span>Pasageri</span>
+        <button class="pax-btn" id="pax-btn" type="button" aria-haspopup="true" aria-expanded="false">👤 1 adult ▾</button>
+        <div class="pax-pop" id="pax-pop" hidden>
+          <div class="pax-row" data-k="adults"><div><b>Adulți</b><small>12 ani și peste</small></div>
+            <button type="button" data-d="-1" aria-label="Mai puțini adulți">−</button><output>1</output><button type="button" data-d="1" aria-label="Mai mulți adulți">+</button></div>
+          <div class="pax-row" data-k="children"><div><b>Copii</b><small>2–11 ani, cu loc</small></div>
+            <button type="button" data-d="-1" aria-label="Mai puțini copii">−</button><output>0</output><button type="button" data-d="1" aria-label="Mai mulți copii">+</button></div>
+          <div class="pax-row" data-k="infants"><div><b>Bebeluși</b><small>sub 2 ani, în brațe</small></div>
+            <button type="button" data-d="-1" aria-label="Mai puțini bebeluși">−</button><output>0</output><button type="button" data-d="1" aria-label="Mai mulți bebeluși">+</button></div>
+          <p class="pax-note">Maximum 9 locuri pe rezervare (adulți + copii); câte un bebeluș pentru fiecare adult.</p>
+          <button type="button" class="btn small" id="pax-done">Gata</button>
+        </div>
+      </div>
+      <button class="btn small ghost" id="f-dates-clear" type="button" hidden>✕ Șterge datele</button>
+      <p class="datebox-hint" id="f-dates-hint">Opțional: dacă ai date fixe, alege-le și toate listele se filtrează pe ele.</p>
+    </fieldset>
+    <div class="chips" id="f-origin" role="group" aria-label="Oraș de plecare"></div>
+    <label class="exact-toggle" title="Arată doar prețuri reale: direct de la Wizz Air și Ryanair sau confirmate pe Google Flights. Debifează ca să vezi și prețurile găsite în căutările altor călători (de verificat).">
+      <input type="checkbox" id="f-exact" checked> <span>Doar prețuri reale</span>
+    </label>
+    <div class="seg" id="f-trip" role="group" aria-label="Tip bilet">
+      <button data-v="ALL" class="on">Toate</button>
+      <button data-v="OW">Doar dus</button>
+      <button data-v="RT">Dus-întors</button>
+    </div>
+    <label class="field"><span>Preț max</span><input id="f-max" type="number" min="0" step="5" placeholder="€" inputmode="numeric"></label>
+    <label class="field grow"><span>Destinație</span><input id="f-q" type="search" placeholder="ex: Roma, Spania, LTN"></label>
+    <label class="field" id="f-sort-wrap"><span>Ordonează</span>
+      <select id="f-sort">
+        <option value="best">⭐ Cele mai bune oferte</option>
+        <option value="price_asc">💶 Preț: de la cel mai ieftin</option>
+        <option value="price_desc">💶 Preț: de la cel mai scump</option>
+        <option value="newest">🆕 Cele mai noi (apărute recent)</option>
+        <option value="date_asc">📅 Plecare: cele mai apropiate</option>
+        <option value="date_desc">📅 Plecare: cele mai îndepărtate</option>
+        <option value="discount">📉 Cea mai mare reducere</option>
+        <option value="name">🔤 Destinație A–Z</option>
+      </select>
+    </label>
+    <label class="field" id="f-days-wrap" hidden><span>Pleacă în max</span>
+      <select id="f-days">
+        <option value="3">3 zile</option>
+        <option value="7">7 zile</option>
+        <option value="10" selected>10 zile</option>
+        <option value="14">14 zile</option>
+        <option value="21">21 zile</option>
+      </select>
+    </label>
+  </section>
+
+  <div id="banner"></div>
+
+  <section id="tab-deals" class="panel"></section>
+  <section id="tab-search" class="panel" hidden></section>
+  <section id="tab-lm" class="panel" hidden></section>
+  <section id="tab-dest" class="panel" hidden></section>
+  <section id="tab-map" class="panel" hidden></section>
+  <section id="tab-escale" class="panel" hidden></section>
+  <section id="tab-exotic" class="panel" hidden></section>
+  <section id="tab-favs" class="panel" hidden></section>
+  <section id="tab-help" class="panel prose" hidden></section>
+</main>
+
+<dialog id="route-modal" aria-labelledby="rm-title">
+  <div class="modal-head">
+    <div>
+      <h2 id="rm-title">Rută</h2>
+      <p class="sub" id="rm-sub"></p>
+    </div>
+    <button class="btn ghost icon" id="rm-close" aria-label="Închide">✕</button>
+  </div>
+  <div id="rm-body"></div>
+</dialog>
+
+<dialog id="surprise-modal" class="sp-modal" aria-labelledby="sp-title">
+  <div class="modal-head">
+    <div>
+      <h2 id="sp-title">🎲 Surprinde-mă</h2>
+      <p class="sub">Tu alegi bugetul, noi alegem destinația.</p>
+    </div>
+    <button class="btn ghost icon" id="sp-close" aria-label="Închide">✕</button>
+  </div>
+  <div class="sp-opts">
+    <div class="seg" id="sp-budget" role="group" aria-label="Buget">
+      <button data-v="30">sub 30 €</button><button data-v="50" class="on">sub 50 €</button><button data-v="100">sub 100 €</button><button data-v="200">sub 200 €</button>
+    </div>
+    <div class="seg" id="sp-trip" role="group" aria-label="Tip bilet">
+      <button data-v="OW" class="on">Doar dus</button><button data-v="RT">Dus-întors</button>
+    </div>
+  </div>
+  <div id="sp-body"></div>
+  <div class="sp-foot"><button class="btn" id="sp-again" type="button">🎲 Altă destinație</button></div>
+</dialog>
+
+<div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
