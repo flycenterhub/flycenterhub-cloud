@@ -1763,6 +1763,17 @@ $("#btn-theme").addEventListener("click", () => {
     const v = document.createElement("a");
     v.href = "vizitatori.html"; v.className = "btn small ghost"; v.textContent = "📊 Vizitatori"; v.title = "Câte persoane intră pe site-ul public";
     a.before(v);
+    const c = document.createElement("button");
+    c.className = "btn small ghost"; c.textContent = "☁️ Urcă în cloud"; c.title = "Urcă în GitHub (flycenterhub-cloud) codul schimbat pe laptop";
+    c.onclick = async () => {
+      c.disabled = true; c.textContent = "☁️ Se urcă…";
+      let r;
+      try { r = await post("/api/cloud-sync"); } catch (e) { r = { ok: false, message: "Nu răspunde aplicația" }; }
+      c.disabled = false; c.textContent = "☁️ Urcă în cloud";
+      const list = r.ok ? [...(r.uploaded || []).map(f => "⬆ " + f), ...(r.deleted || []).map(f => "🗑 " + f)].join("\n") : "";
+      alert((r.ok ? "✅ " : "⚠️ ") + r.message + (list ? "\n\n" + list : ""));
+    };
+    v.before(c);
   }
 
   setInterval(loadStatus, STATIC ? 60000 : 8000);

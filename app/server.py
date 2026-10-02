@@ -66,6 +66,12 @@ def make_handler(engine):
                 if u.path == "/api/escale":
                     from . import extras
                     return self._json(extras.public_connections(db, cfg))
+                if u.path == "/api/visitors":
+                    from . import visitors
+                    return self._json(visitors.stats(db, qs.get("days", 30)))
+                if u.path == "/api/visitors-token":
+                    from . import visitors
+                    return self._json({"has_token": visitors.has_token(db)})
                 if u.path == "/api/photos-admin":
                     from . import photos
                     return self._json(photos.admin_list(db))
@@ -132,6 +138,12 @@ def make_handler(engine):
                         return self._json({"ok": False, "message": "Nu găsesc poza pe Wikimedia Commons. Lipește linkul paginii pozei (commons.wikimedia.org/wiki/File:...)."})
                     photos.set_custom(engine.db, code, info["file"])
                     return self._json({"ok": True, **info})
+                if u.path == "/api/visitors-token":
+                    from . import visitors
+                    n = int(self.headers.get("Content-Length") or 0)
+                    body = json.loads(self.rfile.read(n).decode("utf-8") or "{}")
+                    visitors.set_token(engine.db, body.get("token"))
+                    return self._json({"ok": True})
                 if u.path == "/api/photo-upload":
                     from . import photos
                     n = int(self.headers.get("Content-Length") or 0)
@@ -143,6 +155,9 @@ def make_handler(engine):
                     if not ref:
                         return self._json({"ok": False, "message": "Nu am putut salva poza. Alege un fișier JPG sau PNG."})
                     return self._json({"ok": True, "file": ref})
+                if u.path == "/api/cloud-sync":
+                    from . import cloudsync
+                    return self._json(cloudsync.sync())
                 if u.path == "/api/publish":
                     threading.Thread(target=engine.publish_site, args=(True,), daemon=True).start()
                     return self._json({"ok": True})

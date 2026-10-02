@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vizitatori · FlyCenterHub</title>
+<style>
+  :root { --bg: #f4f2ee; --card: #fff; --text: #1d1d1b; --muted: #77746d; --line: #e4e1da; --accent: #2a78d6; --bar: #2a78d6; --ok: #1a7f37; --warn: #b54708; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #161615; --card: #22221f; --text: #f1efe8; --muted: #a09d94; --line: #34332f; --accent: #58a6ff; --bar: #3987e5; --ok: #3fb950; --warn: #f0883e; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+  header { border-bottom: 1px solid var(--line); padding: 14px 16px; }
+  .bar { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  h1 { font-size: 19px; margin: 0 auto 0 0; }
+  a { color: var(--accent); }
+  button, select, input { font: inherit; padding: 8px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  button { cursor: pointer; } button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .box h2 { font-size: 15px; margin: 0 0 10px; }
+  .note { font-size: 13px; color: var(--muted); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .tile .n { font-size: 30px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tile .l { font-size: 13px; color: var(--muted); }
+  .chart { position: relative; height: 220px; display: flex; align-items: flex-end; gap: 2px; border-bottom: 1px solid var(--line); padding-top: 18px; }
+  .chart .c { flex: 1; height: 100%; display: flex; align-items: flex-end; cursor: default; }
+  .chart .c span { display: block; width: 100%; background: var(--bar); border-radius: 4px 4px 0 0; min-height: 1px; }
+  .chart .c:hover span { opacity: .75; }
+  .axis { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .tip { position: absolute; pointer-events: none; background: var(--text); color: var(--bg); font-size: 12.5px; padding: 5px 9px; border-radius: 7px; white-space: nowrap; transform: translate(-50%, -100%); display: none; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td { padding: 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; padding-left: 10px; white-space: nowrap; }
+  .key { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .key input { flex: 1; min-width: 260px; }
+  .err { color: var(--warn); }
+  .ok { color: var(--ok); }
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <h1>📊 Vizitatori site public</h1>
+  <select id="days"><option value="7">Ultimele 7 zile</option><option value="30" selected>Ultimele 30 de zile</option><option value="90">Ultimele 90 de zile</option><option value="365">Ultimul an</option></select>
+  <button id="reload">↻ Reîncarcă</button>
+  <a href="/">← Înapoi la site</a>
+</div></header>
+<main>
+  <div class="box" id="keybox" hidden>
+    <h2>🔑 Cheia GoatCounter</h2>
+    <div class="note">Lipește aici cheia API creată pe GoatCounter (doar cu „Read statistics”). Rămâne salvată doar pe laptop: nu se publică pe site și nu ajunge pe GitHub.</div>
+    <div class="key"><input id="tok" type="password" placeholder="Lipește cheia aici" autocomplete="off"><button class="primary" id="save">Salvează</button></div>
+    <div class="note" id="keymsg"></div>
+  </div>
+  <div id="out"></div>
+  <div class="note" id="change" hidden><a href="#" id="chg">Schimbă cheia GoatCounter</a> · Statisticile complete: <a href="https://flycenterhub.goatcounter.com" target="_blank" rel="noopener">flycenterhub.goatcounter.com</a></div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = n => Number(n || 0).toLocaleString("ro-RO");
+const LUNI = ["ian", "feb", "mar", "apr", "mai", "iun", "iul", "aug", "sep", "oct", "noi", "dec"];
+const zi = d => { const [y, m, dd] = d.split("-"); return `${+dd} ${LUNI[m - 1]}`; };
+
+function table(title, rows, empty) {
+  const body = rows && rows.length ? rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${fmt(v)}</td></tr>`).join("")
+    : `<tr><td class="note">${esc(empty || "Încă nimic")}</td><td></td></tr>`;
+  return `<div class="box"><h2>${title}</h2><table>${body}</table></div>`;
+}
+
+async function load() {
+  $("#out").innerHTML = `<div class="box note">Se încarcă…</div>`;
+  let d;
+  try { d = await (await fetch("/api/visitors?days=" + $("#days").value)).json(); }
+  catch (e) { $("#out").innerHTML = `<div class="box err">Nu răspunde aplicația de pe laptop.</div>`; return; }
+  if (d.no_token) { $("#keybox").hidden = false; $("#change").hidden = true; $("#out").innerHTML = ""; return; }
+  $("#change").hidden = false;
+  if (!d.ok) { $("#keybox").hidden = false; $("#out").innerHTML = `<div class="box err">${esc(d.message)}</div>`; return; }
+  $("#keybox").hidden = true;
+  const daily = d.daily || [], today = daily.length ? daily[daily.length - 1][1] : 0, yest = daily.length > 1 ? daily[daily.length - 2][1] : 0;
+  const max = Math.max(1, ...daily.map(x => x[1]));
+  const evs = d.events || [];
+  const book = evs.filter(e => /^rezerva:/.test(e[0])), tabs = evs.filter(e => /^tab:/.test(e[0]));
+  const bookTotal = book.reduce((s, e) => s + e[1], 0);
+  $("#out").innerHTML = `
+    <div class="tiles">
+      <div class="box tile"><div class="n">${fmt(today)}</div><div class="l">vizitatori azi</div></div>
+      <div class="box tile"><div class="n">${fmt(yest)}</div><div class="l">vizitatori ieri</div></div>
+      <div class="box tile"><div class="n">${fmt(d.total)}</div><div class="l">vizitatori în ${d.days} zile</div></div>
+      <div class="box tile"><div class="n">${fmt(bookTotal)}</div><div class="l">clickuri pe „Rezervă” în ${d.days} zile</div></div>
+    </div>
+    <div class="box"><h2>Vizitatori pe zi</h2>
+      <div class="chart" id="chart">${daily.map(([day, n]) => `<div class="c" data-t="${esc(zi(day))}: ${fmt(n)} vizitatori"><span style="height:${(n / max * 100).toFixed(1)}%"></span></div>`).join("")}<div class="tip" id="tip"></div></div>
+      <div class="axis"><span>${daily.length ? zi(daily[0][0]) : ""}</span><span>maxim ${fmt(max)} pe zi</span><span>${daily.length ? zi(daily[daily.length - 1][0]) : ""}</span></div>
+    </div>
+    <div class="grid2">
+      ${table("✈️ Zboruri pe care s-a apăsat „Rezervă”", book.map(([k, v]) => [k.replace(/^rezerva:\s*/, ""), v]), "Încă niciun click pe Rezervă")}
+      ${table("🔗 De unde vin", d.toprefs, "Încă nimic (sau doar intrări directe)")}
+      ${table("🌍 Țări", d.locations)}
+      ${table("📱 Dispozitiv", (d.sizes || []).map(([k, v]) => [({ phone: "Telefon", tablet: "Tabletă", desktop: "Calculator", largerdesktop: "Calculator (ecran mare)", unknown: "Necunoscut" })[String(k).toLowerCase()] || k, v]))}
+      ${table("💻 Sistem", d.systems)}
+      ${table("🗂 Tab-uri deschise", tabs.map(([k, v]) => [k.replace(/^tab:\s*/, ""), v]), "Încă nimic")}
+    </div>`;
+  const chart = $("#chart"), tip = $("#tip");
+  chart.addEventListener("mousemove", e => {
+    const c = e.target.closest(".c"); if (!c) { tip.style.display = "none"; return; }
+    const r = chart.getBoundingClientRect(), cr = c.getBoundingClientRect();
+    tip.textContent = c.dataset.t; tip.style.display = "block";
+    tip.style.left = Math.min(Math.max(cr.left - r.left + cr.width / 2, 70), r.width - 70) + "px"; tip.style.top = "14px";
+  });
+  chart.addEventListener("mouseleave", () => tip.style.display = "none");
+}
+
+$("#save").onclick = async () => {
+  const token = $("#tok").value.trim();
+  if (!token) return;
+  await fetch("/api/visitors-token", { method: "POST", headers: { "X-Zboruri": "1", "Content-Type": "application/json" }, body: JSON.stringify({ token }) });
+  $("#tok").value = ""; $("#keymsg").innerHTML = `<span class="ok">✅ Salvată.</span>`;
+  load();
+};
+$("#chg").onclick = e => { e.preventDefault(); $("#keybox").hidden = false; $("#tok").focus(); };
+$("#days").onchange = load; $("#reload").onclick = load;
+load();
+</script>
+</body>
+</html>
