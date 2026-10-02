@@ -151,8 +151,6 @@ def format_daily(summary, places, dashboard_url):
             extra.append(f"{lk['removed']} zboruri epuizate scoase")
         lines.append(f"\n🔗 Linkuri „Rezervă” verificate azi la {lk['at'][11:16]}: {lk['total']:,} ".replace(",", ".")
                      + (f"({', '.join(extra)})" if extra else "— toate duc exact la zborul lor ✅"))
-    if s.get("posts"):
-        lines.append(f"\n📰 {s['posts']} articole noi pe site-urile de oferte în ultimele 24 de ore")
     if s.get("warnings"):
         lines.append("\n⚠️ " + " · ".join(html.escape(w) for w in s["warnings"]))
     lines.append(f"\n📊 Toate ofertele: {dashboard_url}")

@@ -59,7 +59,7 @@ DEFAULTS = {
         # Aceeași rută se retrimite doar dacă prețul scade cu încă X% sau după Y zile
         "renotify_improvement_pct": 10,
         "renotify_after_days": 14,
-        "send_feed_posts": True,
+        "send_feed_posts": False,
         # Rezumatul zilnic (top oferte + confirmarea că platforma funcționează); null = dezactivat
         "daily_summary_hour": 9,
     },

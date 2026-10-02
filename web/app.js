@@ -228,6 +228,18 @@ function gfBooking(link) {
   if (!/^gfpost:/.test(link || "")) return null;
   try { return JSON.parse(link.slice(7)); } catch (e) { return null; }
 }
+/* ---------- statistici (GoatCounter, doar pe site-ul public, fără cookie-uri) ---------- */
+function gcEvent(path) {
+  try { if (STATIC && window.goatcounter && goatcounter.count) goatcounter.count({ path, title: path, event: true }); } catch (e) { /* ignorat */ }
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest(".book, #btn-surprise");
+  if (!b) return;
+  if (b.id === "btn-surprise") return gcEvent("surprinde-ma");
+  const c = b.closest(".card");
+  const r = c && c.querySelector(".fc-route");
+  gcEvent("rezerva: " + (r ? r.textContent.trim().replace(/\s+/g, " ") : "zbor"));
+}, true);
 function bookBtn(link, airline, prefix = "Rezervă") {
   if (!link) return "";
   const g = gfBooking(link);
@@ -894,6 +906,7 @@ function destFromSearch() {
 /* ---------- randare: articole ---------- */
 function renderPosts() {
   const el = $("#tab-posts");
+  if (!el) return; // rubrica „Site-uri” a fost scoasă
   const rows = state.posts.filter(p => state.origin === "ALL" || (p.cities || "").split(",").includes(state.origin))
     .filter(p => !state.q || `${p.title} ${p.summary}`.toLowerCase().includes(state.q.toLowerCase()));
   $("#c-posts").textContent = state.posts.length ? rows.length : "";
@@ -1521,8 +1534,9 @@ function lineChart(el, rows) {
 function setTab(t) {
   if (!$(`#tab-${t}`)) t = "deals";
   state.tab = t;
+  if (state.tabInit) gcEvent("tab: " + t); state.tabInit = true;
   $$(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
-  for (const id of ["deals", "search", "lm", "dest", "map", "escale", "exotic", "favs", "posts", "help"]) $(`#tab-${id}`).hidden = id !== t;
+  for (const id of ["deals", "search", "lm", "dest", "map", "escale", "exotic", "favs", "help"]) $(`#tab-${id}`).hidden = id !== t;
   if (t === "map") renderMap();
   if (t === "escale") renderEscale();
   $("#filters").hidden = t === "help" || t === "favs";
@@ -1746,6 +1760,9 @@ $("#btn-theme").addEventListener("click", () => {
     const a = document.createElement("a");
     a.href = "poze.html"; a.className = "btn small ghost"; a.textContent = "🖼 Poze"; a.title = "Verifică și schimbă pozele destinațiilor";
     $("#btn-theme").before(a);
+    const v = document.createElement("a");
+    v.href = "vizitatori.html"; v.className = "btn small ghost"; v.textContent = "📊 Vizitatori"; v.title = "Câte persoane intră pe site-ul public";
+    a.before(v);
   }
 
   setInterval(loadStatus, STATIC ? 60000 : 8000);

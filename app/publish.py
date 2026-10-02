@@ -11,7 +11,7 @@ import json
 import logging
 import os
 
-from . import config, extras, fx, net, photos, queries
+from . import config, extras, fx, net, photos, queries, visitors
 from .db import now_str
 from .fmt import ORIGIN_NAMES, country_ro
 from .regions import region_of
@@ -120,6 +120,7 @@ def build(engine):
     files["version.json"] = _j({"version": version})
     html = html.replace('<script src="app.js"></script>',
                         f'<script>window.STATIC_SITE = true; window.DATA_VERSION = "{version}";</script>\n'
+                        f'{visitors.COUNT_TAG}\n'
                         f'<script src="static-api.js?v={version}"></script>\n<script src="app.js?v={version}"></script>')
     html = html.replace('href="style.css"', f'href="style.css?v={version}"')
     html = html.replace('src="logo.svg"', f'src="logo.svg?v={version}"').replace('href="logo.svg"', f'href="logo.svg?v={version}"')
