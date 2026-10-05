@@ -99,7 +99,6 @@ def scan(cfg, db, scan_id, progress, stop):
         info["errors"].append(f"Harta rutelor: {e}")
         return info
 
-    wins = windows(cfg["months_ahead"], days=30)
     # Wizz Air limitează cererile dese: pornim mai lent decât la Ryanair și ne adaptăm
     throttle = Throttle(max(delay, 1.2))
 
@@ -117,7 +116,9 @@ def scan(cfg, db, scan_id, progress, stop):
 
     def fetch_route(origin, dest):
         out, back = {}, {}
-        for start, stop_d in wins:
+        # intervalele se calculează la fiecare rută: o scanare poate dura zile (laptopul doarme),
+        # iar Wizz Air respinge o dată de început din trecut (HTTP 400 InvalidFromDate)
+        for start, stop_d in windows(cfg["months_ahead"], days=30):
             data = timetable(api, origin, dest, start, stop_d, throttle.hit)
             out.update(_rows(data.get("outboundFlights")))
             back.update(_rows(data.get("returnFlights")))
