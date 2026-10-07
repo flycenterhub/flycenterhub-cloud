@@ -753,6 +753,7 @@ button.btn.book{font:inherit;cursor:pointer}
 .sp-modal { width: min(440px, calc(100vw - 24px)); }
 .sp-opts { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 18px 10px; }
 .sp-opts .seg button { padding: 7px 10px; }
+.sp-opts .sp-from { width: 100%; }
 #sp-body { padding: 0 18px; }
 .sp-count { font-size: 12.5px; margin: 2px 0 10px; }
 .sp-card .card.fc { width: 100%; max-width: none; margin: 0; }

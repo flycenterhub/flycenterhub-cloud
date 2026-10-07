@@ -933,7 +933,7 @@ function renderHelp() {
   <h2>🔀 Escale făcute de tine</h2>
   <p>Două bilete low-cost separate, prin aeroporturile mari Ryanair (de exemplu Cluj → Bergamo, apoi Bergamo → Sevilla), când ies mai ieftine decât zborul direct sau când nu există zbor direct. Arătăm doar combinații cu peste 3 ore între zboruri sau cu o noapte la escală. Atenție: fiind bilete separate, dacă primul zbor întârzie, al doilea nu te așteaptă.</p>
   <h2>☀️ Vremea și 🎲 Surprinde-mă</h2>
-  <p>Pe fiecare zbor vezi temperatura medie și cât plouă de obicei în luna călătoriei (media 2001–2020, date NASA POWER; nu e o prognoză). Butonul <b>🎲 Surprinde-mă</b> alege la întâmplare o destinație în bugetul tău, din orașul selectat.</p>
+  <p>Pe fiecare zbor vezi temperatura medie și cât plouă de obicei în luna călătoriei (media 2001–2020, date NASA POWER; nu e o prognoză). Butonul <b>🎲 Surprinde-mă</b> alege la întâmplare o destinație în bugetul tău, din orașul de plecare ales în fereastra lui.</p>
   <h2>🌴 Exotice din Budapesta și București</h2>
   <p>Destinații din afara Europei (Asia, insulele din Oceanul Indian, Orientul Mijlociu, Africa, America, Oceania), orice companie, direct sau cu escală, dus-întors cu sejururi de ${s.exotic?.min_nights ?? 5}–${s.exotic?.max_nights ?? 28} nopți, pe următoarele ${s.exotic?.months_ahead ?? 8} luni. Pentru ele, pragul de ofertă e mai mare: până la ${s.exotic?.max_price_rt_eur ?? 1400} € dus-întors, iar sub ${s.exotic?.super_cheap_rt_eur ?? 400} € e „super ieftin”.</p>
   <h2>Cum se decide că e o ofertă</h2>
@@ -1703,21 +1703,23 @@ $("#btn-scan").addEventListener("click", async () => {
 });
 $("#rm-close").addEventListener("click", () => $("#route-modal").close());
 /* ---------- 🎲 Surprinde-mă: o destinație la întâmplare, în bugetul ales ---------- */
-const SURP = { budget: 50, trip: "OW", last: [] };
+const SURP = { budget: 50, trip: "OW", origin: "ALL", last: [] };
 function surprisePool() {
   const best = new Map();  // cel mai ieftin zbor spre fiecare destinație, ca fiecare loc să aibă aceeași șansă
   for (const r of [...(state.search || []), ...(state.deals || []), ...(state.lm || [])]) {
     if (r.trip !== SURP.trip || !(r.price_eur <= SURP.budget) || r.days_to_dep < 1) continue;
-    if (state.origin !== "ALL" && r.origin !== state.origin) continue;
+    if (SURP.origin !== "ALL" && r.origin !== SURP.origin) continue;
     if (!best.has(r.dest) || r.price_eur < best.get(r.dest).price_eur) best.set(r.dest, r);
   }
   return [...best.values()];
 }
 function renderSurprise() {
+  const codes = (state.status?.origins || []).map(o => o.code).filter(c => ORIGIN_NAMES[c]);
+  $("#sp-origin").innerHTML = ["ALL", ...codes].map(c => `<button data-v="${c}" class="chip${c === SURP.origin ? " on" : ""}">${c === "ALL" ? "Toate orașele" : esc(ORIGIN_NAMES[c])}</button>`).join("");
   $$("#sp-budget button").forEach(b => b.classList.toggle("on", +b.dataset.v === SURP.budget));
   $$("#sp-trip button").forEach(b => b.classList.toggle("on", b.dataset.v === SURP.trip));
   const pool = surprisePool(), body = $("#sp-body");
-  const from = state.origin !== "ALL" ? " din " + esc(ORIGIN_NAMES[state.origin]) : "";
+  const from = SURP.origin !== "ALL" ? " din " + esc(ORIGIN_NAMES[SURP.origin]) : "";
   $("#sp-again").hidden = pool.length < 2;
   if (!pool.length) {
     body.innerHTML = `<div class="empty">Nu am găsit zboruri ${SURP.trip === "RT" ? "dus-întors" : "dus"} sub ${SURP.budget} €${from}${state.dep ? " pe datele alese" : ""}. Încearcă un buget mai mare.</div>`;
@@ -1728,11 +1730,12 @@ function renderSurprise() {
   SURP.last = [pick.dest, ...SURP.last].slice(0, Math.min(8, pool.length - 1));
   body.innerHTML = `<p class="sp-count muted">Ales la întâmplare dintre <b>${pool.length}</b> ${pool.length === 1 ? "destinație" : "destinații"} sub ${SURP.budget} €${from}${state.dep ? ", pe datele tale" : ""}.</p><div class="sp-card">${flightCard(pick)}</div>`;
 }
-$("#btn-surprise").addEventListener("click", () => { $("#surprise-modal").showModal(); renderSurprise(); });
+$("#btn-surprise").addEventListener("click", () => { SURP.origin = state.origin; SURP.last = []; $("#surprise-modal").showModal(); renderSurprise(); });
 $("#sp-close").addEventListener("click", () => $("#surprise-modal").close());
 $("#surprise-modal").addEventListener("click", e => {
   if (e.target.id === "surprise-modal") { e.target.close(); return; }
-  const b = e.target.closest("#sp-budget button"), t = e.target.closest("#sp-trip button");
+  const b = e.target.closest("#sp-budget button"), t = e.target.closest("#sp-trip button"), o = e.target.closest("#sp-origin button");
+  if (o) { SURP.origin = o.dataset.v; SURP.last = []; renderSurprise(); }
   if (b) { SURP.budget = +b.dataset.v; SURP.last = []; renderSurprise(); }
   if (t) { SURP.trip = t.dataset.v; SURP.last = []; renderSurprise(); }
   if (e.target.closest("#sp-again")) renderSurprise();
