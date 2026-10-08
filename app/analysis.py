@@ -37,6 +37,9 @@ def trip_of(row):
     return "RT" if row.get("ret_date") else "OW"
 
 
+NEW_HOURS = 24  # cât timp rămâne eticheta „Nou”
+
+
 def route_key(r):
     return f"{r['origin']}-{r['dest']}-{r['trip']}"
 
@@ -158,6 +161,18 @@ def run(cfg, db, final=True):
         old = prev_best.get(k)
         if prev_best and (old is None or b["price_eur"] <= old * 0.95):
             new_keys.add(k)
+    # Eticheta „Nou” rămâne 24 de ore (altfel o ștergea orice reanaliză de după scanarea completă),
+    # cât timp prețul rămâne cel găsit atunci (sau mai mic)
+    now = dt.datetime.now()
+    cutoff = (now - dt.timedelta(hours=NEW_HOURS)).strftime("%Y-%m-%d %H:%M:%S")
+    marks = {k: v for k, v in (db.get_kv("new_marks", {}) or {}).items() if v[1] >= cutoff}
+    for b in best:
+        k = route_key(b)
+        if k in new_keys and (k not in marks or b["price_eur"] < marks[k][0]):
+            marks[k] = [b["price_eur"], now.strftime("%Y-%m-%d %H:%M:%S")]
+        elif k in marks and b["price_eur"] <= marks[k][0] * 1.02:
+            new_keys.add(k)
+    db.set_kv("new_marks", marks)
     for d in deals:
         if route_key(d) in new_keys:
             d["is_new"] = 1
