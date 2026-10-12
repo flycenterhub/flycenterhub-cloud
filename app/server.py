@@ -63,6 +63,9 @@ def make_handler(engine):
                 if u.path == "/api/climate":
                     from . import extras
                     return self._json(extras.public_climate(db))
+                if u.path == "/api/visas":
+                    from . import visas
+                    return self._json(visas.public(db))
                 if u.path == "/api/escale":
                     from . import extras
                     return self._json(extras.public_connections(db, cfg))

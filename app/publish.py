@@ -11,7 +11,7 @@ import json
 import logging
 import os
 
-from . import config, extras, fx, net, photos, queries, visitors
+from . import config, extras, fx, net, photos, queries, visas, visitors
 from .db import now_str
 from .fmt import ORIGIN_NAMES, country_ro
 from .regions import region_of
@@ -93,6 +93,7 @@ def build(engine):
         "data/photos.json": _j(photos.public(db)),
         "data/coords.json": _j(photos.public_coords(db)),
         "data/climate.json": _j(extras.public_climate(db)),
+        "data/visas.json": _j(visas.public(db)),
         "data/escale.json": _j(extras.public_connections(db, cfg)),
         "data/stats.json": _j(stats),
         "data/hist.json": _j(hist),

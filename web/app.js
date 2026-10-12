@@ -828,6 +828,8 @@ function flightCard(r, opts = {}) {
     ${whenLine(r)}
     ${fcWeather(r)}
     ${opts.season ? `<div class="fc-wx fc-season" title="Lunile cu peste 24°C în medie și fără ploi multe (NASA POWER, 2001–2020)"><span aria-hidden="true">🏖️</span><span>Cea mai bună perioadă: <b>${esc(opts.season)}</b></span></div>` : ""}
+    ${fcVisa(r, !!opts.region)}
+    ${fcChecked(r)}
     ${opts.favNote || ""}
     ${mixed ? `<div class="fc-legs">${legShort("🛫", r.out)}${legShort("🛬", r.back)}</div>` : ""}
     <div class="fc-meta">${airline ? `<span>${airline}</span>` : ""}${cardTags(r)}</div>
@@ -975,8 +977,12 @@ function renderHelp() {
   <p>În prima zi comparația se face cu celelalte zile din calendarul rutei. Cu cât aplicația rulează mai mult, cu atât istoricul devine mai precis.</p>
   <h2>Când se verifică</h2>
   <p>Prețurile se verifică complet la fiecare <b>${s.scan_interval_hours ?? 4} ore</b>, pe următoarele <b>${s.months_ahead ?? 4} luni</b>. Dus-întors înseamnă ${s.round_trip?.min_nights ?? 2}–${s.round_trip?.max_nights ?? 10} nopți la destinație. Verificările mai dese riscă blocarea de către companii.</p>
-  ${STATIC ? `<h2>Despre această pagină</h2>
-  <p>Aceasta este pagina publică <b>FlyCenterHub S.R.</b>. Prețurile sunt căutate automat și publicate aici după fiecare verificare. Sus vezi când au fost actualizate ultima dată.</p>` : `
+  <h2 id="despre">🛡️ Cine suntem și cum funcționează</h2>
+  <p><b>FlyCenterHub S.R.</b> este un comparator de bilete de avion: căutăm automat, de mai multe ori pe zi, prețurile la Wizz Air și Ryanair (direct de la companii), pe Google Flights și la agențiile din Aviasales, și le punem într-un singur loc.</p>
+  <p><b>Nu vindem bilete și nu primim plata ta.</b> Când apeși „Rezervă” ajungi pe site-ul companiei aeriene sau al agenției, unde vezi prețul final, alegi bagajele și plătești. Nu adăugăm niciun comision.</p>
+  <p><b>Cât de sigure sunt prețurile:</b> „✓ Preț real” și „🕒 Preț verificat acum X ore” = preț luat direct de la companie sau confirmat pe Google Flights. „🔎 De verificat” = preț găsit recent în căutările altor călători (Aviasales), care trebuie confirmat. Prețurile low-cost se schimbă des, așa că prețul final e cel de pe site-ul unde plătești.</p>
+  <p><b>Vize și acte (🛂):</b> pentru cetățenii români, turism, după datele publice IATA (prin Wikipedia), actualizate ${esc(state.visasUpdated || "2026")}. Sunt orientative: verifică întotdeauna pe <a href="${MAE_URL}" target="_blank" rel="noopener">site-ul MAE</a> înainte de plecare.</p>
+  ${STATIC ? `<p>Sus vezi când au fost actualizate ultima dată prețurile.</p>` : `
   <h2>Notificări Telegram</h2>
   <p>${state.status?.telegram ? "✅ Active." : "Inactive."} Pentru configurare rulează <code>Configurare-Telegram.bat</code> din folderul aplicației.
   ${state.status?.telegram ? `<button class="btn small ghost" id="btn-tg-test">Trimite un mesaj de test</button>` : ""}</p>
@@ -1080,6 +1086,24 @@ function fcPhoto(r) {
 /* ---------- vremea medie în luna zborului (NASA POWER, 2001–2020) ---------- */
 let CLIMATE = {};
 const climateP = api("/api/climate").then(c => { CLIMATE = c || {}; }).catch(() => {});
+let VISAS = {};
+api("/api/visas").then(v => { VISAS = v?.countries || {}; state.visasUpdated = v?.updated; if (state.status) renderAll(); }).catch(() => {});
+const MAE_URL = "https://www.mae.ro/";
+// 🛂 Actele pentru români: arătăm la destinațiile din afara Europei și oriunde e nevoie de ceva în plus față de buletin/pașaport
+function fcVisa(r, exotic) {
+  const v = VISAS[r.country];
+  if (!v || (v[0] === "free" && !exotic)) return "";
+  const [kind, text, stay] = v, ico = { free: "✅", eta: "📝", evisa: "📝", voa: "🛬", visa: "⚠️" }[kind] || "🛂";
+  const pass = exotic ? " Pașaport valabil de regulă minimum 6 luni de la intrare." : "";
+  const tip = `Pentru cetățenii români, turism: ${text}${stay ? `, ședere până la ${stay}` : ""}.${pass} Informație orientativă (Wikipedia/IATA, ${state.visasUpdated || "2026"}). Verifică pe site-ul MAE înainte de plecare.`;
+  return `<div class="fc-wx fc-visa v-${kind}" title="${esc(tip)}"><span aria-hidden="true">🛂</span><span>${ico} ${esc(text)}${stay ? ` · ${esc(stay)}` : ""} <a href="${MAE_URL}" target="_blank" rel="noopener" class="muted">MAE ↗</a></span></div>`;
+}
+function fcChecked(r) {
+  const ts = r.last_seen || r.checked_at;
+  if (!ts) return "";
+  const src = r.source || r.out?.source;
+  return `<div class="fc-checked muted" title="${esc(ts)}">${unverified(r) ? "🔎 Găsit" : "🕒 Preț verificat"} ${ago(ts)}${src && !unverified(r) ? " la " + esc(srcName(src)) : ""}</div>`;
+}
 function fcWeather(r, date = r.dep_date) {
   const c = CLIMATE[r.dest];
   if (!c || !date) return "";
@@ -1701,7 +1725,13 @@ document.addEventListener("click", async e => {
   const exr = e.target.closest("[data-exregion]");
   if (exr) { state.exRegion = exr.dataset.exregion; renderExotic(); return; }
   const t = e.target.closest("[data-tab]");
-  if (t) { setTab(t.dataset.tab); if (t.closest(".tabs") && innerWidth <= 700) scrollTo({ top: 0 }); return; }
+  if (t) {
+    if (t.tagName === "A") e.preventDefault();
+    setTab(t.dataset.tab);
+    if (t.dataset.anchor) $("#" + t.dataset.anchor)?.scrollIntoView({ behavior: "smooth" });
+    else if (t.closest(".tabs") && innerWidth <= 700) scrollTo({ top: 0 });
+    return;
+  }
   const r = e.target.closest("[data-route]");
   if (r) { const [o, d, trip] = r.dataset.route.split("|"); openRoute(o, d, trip); return; }
   if (e.target.id === "btn-feeds") {

@@ -288,6 +288,7 @@
       case "photos": return load("photos");
       case "coords": return load("coords");
       case "climate": return load("climate");
+      case "visas": return load("visas");
       case "escale": return load("escale");
       case "deals": return load(q.exact ? "deals_exact" : "deals");
       case "destinations": return load(q.exact ? "destinations_exact" : "destinations");
