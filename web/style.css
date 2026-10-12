@@ -787,3 +787,11 @@ button.btn.book{font:inherit;cursor:pointer}
   background-attachment: fixed;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body { background: var(--bg); } }
+/* VARIANTA „poză în surdină”: plaja din hero, foarte ștearsă, fixă sub conținut.
+   Pentru a reveni la fundalul doar color, șterge blocul acesta (sau copiază backup-fundal-culoare/style.css). */
+:root:not([data-theme="dark"]) body::before {
+  content: ""; position: fixed; inset: -20px; z-index: -1; pointer-events: none;
+  background: url("hero-bg-1280.jpg") center 60% / cover no-repeat;
+  opacity: .16; filter: blur(3px) saturate(.9);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body::before { display: none; } }
