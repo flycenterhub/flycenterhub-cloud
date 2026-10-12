@@ -1,22 +1,18 @@
 /* Căutarea simplă de sus (hero.js). Modul separat: se scoate ștergând linkul din index.html. */
 .hero {
-  --h1: #1e4fd8; --h2: #6a3fd1; --h3: #e8607a;
   position: relative; margin: 14px 0 6px; border-radius: 24px; overflow: hidden; color: #fff;
-  background:
-    radial-gradient(1200px 400px at 110% -20%, rgba(255, 196, 120, .55), transparent 60%),
-    radial-gradient(700px 380px at -10% 120%, rgba(56, 214, 220, .45), transparent 60%),
-    linear-gradient(125deg, var(--h1) 0%, var(--h2) 55%, var(--h3) 100%);
-  box-shadow: 0 18px 50px -18px rgba(54, 52, 160, .55);
+  /* poza ta cu Maldive (photos/MLE.jpg); culoarea de dedesubt rămâne dacă poza nu se încarcă */
+  background: #0f6e8c url("photos/MLE.jpg") center 62% / cover no-repeat;
+  box-shadow: 0 18px 50px -18px rgba(5, 40, 70, .55);
 }
-.hero::after { /* traiectoria unui avion, discret */
-  content: ""; position: absolute; right: -40px; top: -30px; width: 380px; height: 220px; pointer-events: none;
-  border: 2px dashed rgba(255, 255, 255, .28); border-color: rgba(255, 255, 255, .28) transparent transparent transparent;
-  border-radius: 50%; transform: rotate(-12deg);
+.hero::before { /* umbră discretă ca textul să se citească peste poză */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(4, 28, 52, .10) 0%, rgba(4, 28, 52, .30) 45%, rgba(4, 28, 52, .62) 100%);
 }
 .hero-in { position: relative; z-index: 1; padding: 30px 28px 22px; }
-.hero-h { margin: 0; font-size: 34px; line-height: 1.1; font-weight: 800; letter-spacing: -.02em; }
-.hero-h .script { font-family: "Great Vibes", "Segoe Script", "Brush Script MT", cursive; font-weight: 400; font-size: 50px; letter-spacing: 0; color: #ffe3a3; padding: 0 2px; }
-.hero-p { margin: 6px 0 18px; max-width: 640px; font-size: 15px; opacity: .92; }
+.hero-h { margin: 0; text-shadow: 0 2px 14px rgba(0, 0, 0, .35); font-size: 34px; line-height: 1.1; font-weight: 800; letter-spacing: -.02em; }
+.hero-h .script { font-family: "Great Vibes", "Segoe Script", "Brush Script MT", cursive; font-weight: 400; font-size: 50px; letter-spacing: 0; color: #fff3c4; padding: 0 2px; }
+.hero-p { margin: 6px 0 18px; max-width: 640px; font-size: 15.5px; font-weight: 500; text-shadow: 0 1px 8px rgba(0, 0, 0, .45); }
 
 .hero-box {
   display: grid; grid-template-columns: 1.1fr 1.5fr 1fr 1fr auto; align-items: stretch; gap: 0;
@@ -40,7 +36,7 @@
 .hero-go {
   margin-left: 6px; border: 0; border-radius: 14px; padding: 0 28px; cursor: pointer;
   font: 800 17px system-ui, sans-serif; color: #fff; letter-spacing: .01em;
-  background: linear-gradient(135deg, #ff7a59, #ff4f8b); box-shadow: 0 8px 20px -6px rgba(255, 79, 139, .7);
+  background: linear-gradient(135deg, #ff8a4c, #ff5a5f); box-shadow: 0 8px 20px -6px rgba(255, 90, 95, .7);
   transition: transform .15s, box-shadow .15s, filter .15s;
 }
 .hero-go:hover { transform: translateY(-1px); filter: brightness(1.05); box-shadow: 0 12px 26px -8px rgba(255, 79, 139, .8); }
@@ -54,10 +50,10 @@
   backdrop-filter: blur(6px); transition: background .15s, transform .15s, color .15s;
 }
 .hero-chip:hover { background: rgba(255, 255, 255, .26); transform: translateY(-1px); }
-.hero-chip.on { background: #fff; color: #3a2a9a; border-color: #fff; }
-.hero-trip { display: inline-flex; background: rgba(0, 0, 0, .18); border-radius: 999px; padding: 3px; }
+.hero-chip.on { background: #fff; color: #0b4a6e; border-color: #fff; }
+.hero-trip { display: inline-flex; background: rgba(0, 0, 0, .28); backdrop-filter: blur(6px); border-radius: 999px; padding: 3px; }
 .hero-trip button { font: inherit; font-size: 13px; font-weight: 700; color: #fff; background: transparent; border: 0; border-radius: 999px; padding: 6px 13px; cursor: pointer; }
-.hero-trip button.on { background: #fff; color: #3a2a9a; }
+.hero-trip button.on { background: #fff; color: #0b4a6e; }
 
 .hero-res { position: relative; z-index: 1; background: var(--bg); color: var(--text); padding: 18px 20px 20px; border-top: 1px solid rgba(255, 255, 255, .3); scroll-margin-top: 12px; }
 .hero-res-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }

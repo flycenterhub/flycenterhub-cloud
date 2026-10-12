@@ -104,15 +104,15 @@
     return `
       <div class="hero-in">
         <div class="hero-txt">
-          <h2 class="hero-h">Unde zbori <span class="script">ieftin</span>?</h2>
-          <p class="hero-p">Alegi de unde, când și cât vrei să dai. Noi căutăm în toate zborurile Wizz Air, Ryanair, Google Flights și agenții.</p>
+          <h2 class="hero-h">Unde pleci în <span class="script">vacanță</span>?</h2>
+          <p class="hero-p">Spune-ne de unde pleci, când și cât vrei să dai. Îți arătăm cele mai ieftine zboruri spre plajă, city break sau destinații exotice.</p>
         </div>
         <form class="hero-box" id="hero-form" autocomplete="off">
           ${field("h-from", "De unde", "🛫", `<select id="h-from"><option value="ALL">Oricare</option>${origins.map(c => `<option value="${c}"${sel(c, H.from)}>${esc(ORIGIN_NAMES[c])}</option>`).join("")}</select>`)}
-          ${field("h-text", "Unde", "📍", `<input id="h-text" type="text" placeholder="${esc((IDEAS.find(i => i[0] === H.where) || IDEAS[0])[2])} · sau scrie: Thailanda, Roma…" value="${esc(H.text)}">`)}
+          ${field("h-text", "Unde", "📍", `<input id="h-text" type="text" placeholder="${esc((IDEAS.find(i => i[0] === H.where) || IDEAS[0])[2])} – sau scrie o țară, un oraș" value="${esc(H.text)}">`)}
           ${field("h-when", "Când", "📅", `<select id="h-when"><option value="">Oricând</option><option value="weekend"${sel("weekend", H.when)}>Weekendul acesta</option>${months().map(([v, l]) => `<option value="${v}"${sel(v, H.when)}>${l}</option>`).join("")}</select>`)}
           ${field("h-budget", "Buget / pers.", "💶", `<select id="h-budget">${BUDGETS.map(b => `<option value="${b}"${sel(b, H.budget)}>${b ? "sub " + b + " €" : "Oricât"}</option>`).join("")}</select>`)}
-          <button class="hero-go" type="submit"><span>Caută</span> <span aria-hidden="true">→</span></button>
+          <button class="hero-go" type="submit"><span>Caută zboruri</span> <span aria-hidden="true">→</span></button>
         </form>
         <div class="hero-row">
           <div class="hero-ideas" role="group" aria-label="Ce fel de vacanță">

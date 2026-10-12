@@ -1,7 +1,7 @@
 """Urcă automat în depozitul cloud (flycenterhub-cloud) codul schimbat pe laptop.
 
 Folosește tokenul GitHub deja salvat pentru publicarea site-ului (config.json, nu se publică).
-Urcă doar codul: app/**/*.py și *.json (date, ex. visa_ro.json) (fără cloud_setup.py), web/* (fără web/photos), cloud_run.py, main.py. Nu atinge
+Urcă doar codul: app/**/*.py și *.json (date, ex. visa_ro.json) (fără cloud_setup.py), web/* (inclusiv web/photos: pozele tale, publice oricum pe site), cloud_run.py, main.py. Nu atinge
 .github/ (workflow-ul), datele sau secretele. Șterge fișierele puse greșit (care nu există pe laptop)
 din app/, web/ și .js/.html din rădăcină.
 """
@@ -22,7 +22,7 @@ def _local_files():
     out = {}
     for base in ("app", "web"):
         for d, dirs, files in os.walk(os.path.join(ROOT, base)):
-            dirs[:] = [x for x in dirs if x not in ("__pycache__", "photos")]
+            dirs[:] = [x for x in dirs if x != "__pycache__"]
             for f in files:
                 rel = os.path.relpath(os.path.join(d, f), ROOT).replace("\\", "/")
                 if rel in SKIP or (base == "app" and not f.endswith((".py", ".json"))):
