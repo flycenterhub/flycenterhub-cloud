@@ -20,7 +20,7 @@ log = logging.getLogger("publish")
 
 API = "https://api.github.com"
 SRC = ["ryanair", "wizzair", "aviasales", "google"]
-WEB_FILES = ["style.css", "app.js", "static-api.js", "logo.svg"]
+WEB_FILES = ["style.css", "app.js", "static-api.js", "logo.svg", "hero.js", "hero.css"]
 # Autorul commit-urilor (ca să nu apară numele personal în depozit)
 BOT = {"name": "FlyCenterHub", "email": "noreply@flycenterhub.github.io"}
 
@@ -124,6 +124,7 @@ def build(engine):
                         f'{visitors.COUNT_TAG}\n'
                         f'<script src="static-api.js?v={version}"></script>\n<script src="app.js?v={version}"></script>')
     html = html.replace('href="style.css"', f'href="style.css?v={version}"')
+    html = html.replace('href="hero.css"', f'href="hero.css?v={version}"').replace('src="hero.js"', f'src="hero.js?v={version}"')
     html = html.replace('src="logo.svg"', f'src="logo.svg?v={version}"').replace('href="logo.svg"', f'href="logo.svg?v={version}"')
     files["index.html"] = html.encode("utf-8")
     for name in WEB_FILES:
