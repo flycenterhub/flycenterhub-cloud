@@ -104,8 +104,8 @@
     return `
       <div class="hero-in">
         <div class="hero-txt">
-          <h2 class="hero-h">Unde pleci în <span class="script">vacanță</span>?</h2>
-          <p class="hero-p">Spune-ne de unde pleci, când și cât vrei să dai. Îți arătăm cele mai ieftine zboruri spre plajă, city break sau destinații exotice.</p>
+          <h2 class="hero-h">Lumea e mai <span class="script">aproape</span> decât crezi.</h2>
+          <p class="hero-p">Verificăm zilnic mii de zboruri din Timișoara, Cluj, Oradea, București și Budapesta. Tu alegi doar destinația, noi găsim cel mai bun preț.</p>
         </div>
         <form class="hero-box" id="hero-form" autocomplete="off">
           ${field("h-from", "De unde", "🛫", `<select id="h-from"><option value="ALL">Oricare</option>${origins.map(c => `<option value="${c}"${sel(c, H.from)}>${esc(ORIGIN_NAMES[c])}</option>`).join("")}</select>`)}
