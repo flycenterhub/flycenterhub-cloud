@@ -250,7 +250,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 .prose code { background: var(--surface-2); padding: 1px 6px; border-radius: 5px; font-size: 13px; }
 
 @media (max-width: 640px) {
-  .top { position: static; }
+  .top { position: relative; }
   .top-inner { padding-top: 10px; padding-bottom: 10px; }
   .status-pill { max-width: 100%; }
   .card .price { font-size: 24px; }
