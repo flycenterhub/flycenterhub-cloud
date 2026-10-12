@@ -122,7 +122,8 @@
             <button type="button" data-htrip="RT" class="${H.trip === "RT" ? "on" : ""}">Dus-întors</button><button type="button" data-htrip="OW" class="${H.trip === "OW" ? "on" : ""}">Doar dus</button>
           </div>
         </div>
-      </div>`;
+      </div>
+      <a class="hero-credit" href="https://commons.wikimedia.org/wiki/File:Cote_D%27Or_Beach_-_Anse_Volbert_-_Praslin_-_Seychelles.jpg" target="_blank" rel="noopener">Foto: Anse Volbert, Seychelles · NorbertNagel, CC BY-SA 4.0</a>`;
   }
 
   function resultsHtml() {
