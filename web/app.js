@@ -544,26 +544,51 @@ function renderExotic() {
   if (!ex) { el.innerHTML = `<div class="empty">Se încarcă…</div>`; return; }
   const regions = ex.regions || {};
   const minDisc = state.status?.settings?.rules?.min_discount_pct ?? 40;
-  const all = applyFilters(ex.fares, true, !!state.dep).filter(r => state.exRegion === "ALL" || r.region === state.exRegion);
+  const all = applyFilters(ex.fares, true, !!state.dep).filter(r => (state.exRegion === "ALL" || r.region === state.exRegion)
+    // concediu = dus-întors; „doar dus” apare doar dacă e ales explicit sau sunt alese datele
+    && (state.trip === "OW" || !!state.dep || r.trip === "RT")
+    && (!state.exMonth || r.dep_date.startsWith(state.exMonth))
+    && (!state.exSun || sunny(r.dest, +r.dep_date.slice(5, 7) - 1)));
+  const now = new Date(), months = Array.from({ length: 12 }, (_, i) => new Date(now.getFullYear(), now.getMonth() + i, 1))
+    .map(d => [`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, `${MONTHS_FULL[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? " " + d.getFullYear() : ""}`]);
+  const sun = `<div class="ex-sun">
+    <label>📅 Pleci în <select id="ex-month"><option value="">orice lună</option>${months.map(([v, l]) => `<option value="${v}"${state.exMonth === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+    <label class="exact-toggle"><input type="checkbox" id="ex-sun"${state.exSun ? " checked" : ""}> <span>☀️ Doar unde e vreme de plajă (peste 24°C, fără ploi multe)</span></label>
+  </div>`;
   // câte un rând pe destinație (dus-întors înaintea lui „doar dus” când ambele există)
   const rows = sortByChoice(all);
   const present = new Set(ex.fares.map(r => r.region));
   $("#c-exotic").textContent = ex.fares.length ? new Set(all.map(r => r.dest)).size : "";
-  const chips = `<div class="chips" style="margin-bottom:12px">${["ALL", ...Object.keys(regions)].filter(k => k === "ALL" || present.has(k))
+  const chips = `<div class="chips" style="margin-bottom:12px">${["ALL", ...EX_ORDER].filter(k => k === "ALL" || (present.has(k) && regions[k]))
     .map(k => `<button class="chip${state.exRegion === k ? " on" : ""}" data-exregion="${k}">${k === "ALL" ? "🌍 Toate regiunile" : esc(regions[k])}</button>`).join("")}</div>`;
   const head = `<div class="banner${state.dep ? "" : " info"}">🌴 <div>Destinații <b>din afara Europei</b> cu plecare din <b>${esc(ex.origin_name)}</b>: orice companie, direct sau cu escală, sejururi de ${state.status?.settings?.exotic?.min_nights ?? 5}–${state.status?.settings?.exotic?.max_nights ?? 28} nopți la dus-întors.
     ${state.dep ? `Filtrate pe datele tale: <b>${datesLabel()}</b>.` : "Cel mai ieftin preț găsit pe oricare dată."}</div></div>`;
   const cards = rows.length
     ? shelves("exotic", rows, r => exoticCard(r, minDisc), state.exRegion === "ALL" ? ["region", "month"] : ["month", "country"], "destinații", regions)
-    : `<div class="empty">Niciun zbor exotic pentru filtrele alese.</div>`;
+    : `<div class="empty">Niciun zbor exotic pentru filtrele alese.${state.exSun || state.exMonth ? " Încearcă altă lună sau debifează „vreme de plajă”." : ""}</div>`;
   const posts = ex.posts.filter(p => !state.q || `${p.title} ${p.summary}`.toLowerCase().includes(state.q.toLowerCase()));
   const postsHtml = `<h3 style="font-size:15px;margin:22px 0 10px">📰 Oferte exotice din ${esc(ex.origin_name)} pe site-urile de specialitate <span class="count">${posts.length}</span></h3>` +
     (posts.length ? `<div class="posts">${posts.map(postHtml).join("")}</div>`
       : `<div class="empty">Încă nu au apărut articole cu destinații exotice din ${esc(ex.origin_name)}. Site-urile sunt verificate la ${state.status?.settings?.feeds_interval_minutes || 30} de minute.</div>`);
-  el.innerHTML = head + chips + cards + postsHtml;
+  el.innerHTML = head + chips + sun + cards + postsHtml;
   initShelves(el);
 }
-function exoticCard(r) { return flightCard(r, { region: r.region_label }); }
+function exoticCard(r) { return flightCard(r, { region: r.region_label, season: bestSeason(r.dest) }); }
+// ordinea regiunilor: întâi destinațiile de concediu (Orientul Mijlociu & Caucaz e mai mult city-break)
+const EX_ORDER = ["insule", "asia", "caraibe", "africa", "america_s", "america_n", "oceania", "orient"];
+// „vreme de plajă” într-o lună: cald (≥ 24°C medie) și fără ploi multe (< 110 mm)
+const sunny = (dest, m) => { const [t, mm] = (CLIMATE[dest] || [])[m] || []; return t != null && t >= 24 && mm < 110; };
+function bestSeason(dest) {
+  const ok = MONTHS.map((_, m) => sunny(dest, m));
+  if (!CLIMATE[dest] || !ok.includes(true)) return "";
+  if (!ok.includes(false)) return "tot anul";
+  const start = ok.findIndex((v, m) => v && !ok[(m + 11) % 12]), runs = [];  // intervale consecutive (și peste Anul Nou)
+  for (let i = 0, m = start; i < 12; i++, m = (m + 1) % 12) {
+    if (!ok[m]) continue;
+    if (ok[(m + 11) % 12] && runs.length) runs[runs.length - 1][1] = m; else runs.push([m, m]);
+  }
+  return runs.map(([a, b]) => a === b ? MONTHS[a] : `${MONTHS[a]}–${MONTHS[b]}`).join(", ");
+}
 function postHtml(p) {
   return `<article class="post">
     <div class="meta">${esc(p.feed)} · din ${(p.cities || "").split(",").map(c => ORIGIN_NAMES[c] || c).join(", ")} · ${esc(p.published || p.first_seen)}</div>
@@ -619,6 +644,7 @@ function shelfGroups(rows, levels) {
     const groups = [...map].map(([key, items]) => ({ lv, key, items }));
     if (lv === "origin") groups.sort((a, b) => originOrder.indexOf(a.key) - originOrder.indexOf(b.key));
     if (lv === "month") groups.sort((a, b) => a.key.localeCompare(b.key));
+    if (lv === "region") groups.sort((a, b) => EX_ORDER.indexOf(a.key) - EX_ORDER.indexOf(b.key));
     if (groups.length > 1) return groups;
     first = first || groups;
   }
@@ -801,6 +827,7 @@ function flightCard(r, opts = {}) {
     ${wizzFee(r)}
     ${whenLine(r)}
     ${fcWeather(r)}
+    ${opts.season ? `<div class="fc-wx fc-season" title="Lunile cu peste 24°C în medie și fără ploi multe (NASA POWER, 2001–2020)"><span aria-hidden="true">🏖️</span><span>Cea mai bună perioadă: <b>${esc(opts.season)}</b></span></div>` : ""}
     ${opts.favNote || ""}
     ${mixed ? `<div class="fc-legs">${legShort("🛫", r.out)}${legShort("🛬", r.back)}</div>` : ""}
     <div class="fc-meta">${airline ? `<span>${airline}</span>` : ""}${cardTags(r)}</div>
@@ -1585,6 +1612,9 @@ function initFilters() {
   });
   $("#f-max").addEventListener("input", e => { state.max = e.target.value; renderAll(); });
   $("#f-q").addEventListener("input", e => { state.q = e.target.value; renderAll(); });
+  document.addEventListener("change", e => {
+    if (e.target.id === "ex-month") { state.exMonth = e.target.value; renderExotic(); }
+  });
   $("#f-sort").addEventListener("change", e => {
     state.sort = e.target.value;
     try { localStorage.setItem("sort", state.sort); } catch (err) { /* ignorat */ }
@@ -1667,6 +1697,7 @@ document.addEventListener("click", async e => {
   if (st) { toggleShelf(st.dataset.shelfToggle); return; }
   const em = e.target.closest("[data-escmode]");
   if (em) { ESC_MODE = em.dataset.escmode; try { localStorage.setItem("escMode", ESC_MODE); } catch (err) { /* ignorat */ } renderEscale(); return; }
+  if (e.target.id === "ex-sun") { state.exSun = e.target.checked; renderExotic(); return; }
   const exr = e.target.closest("[data-exregion]");
   if (exr) { state.exRegion = exr.dataset.exregion; renderExotic(); return; }
   const t = e.target.closest("[data-tab]");

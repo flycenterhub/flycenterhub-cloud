@@ -5,8 +5,8 @@
   const SRC = ["ryanair", "wizzair", "aviasales", "google"];
   const NAMES = { TSR: "Timișoara", BUD: "Budapesta", OMR: "Oradea", CLJ: "Cluj-Napoca", OTP: "București" };
   const REGIONS = {
-    asia: "Asia", insule: "Insule exotice (Oceanul Indian)", orient: "Orientul Mijlociu & Caucaz", africa: "Africa",
-    america_n: "America de Nord", caraibe: "Caraibe & America Centrală", america_s: "America de Sud", oceania: "Oceania & Pacific",
+    insule: "Insule exotice (Oceanul Indian)", asia: "Asia", caraibe: "Caraibe & America Centrală", africa: "Africa",
+    america_s: "America de Sud", america_n: "America de Nord", oceania: "Oceania & Pacific", orient: "Orientul Mijlociu & Caucaz",
   };
   let cache = {};
   let generated = null;
@@ -162,7 +162,7 @@
     const exOrigins = ex.origins || [ex.origin];
     const best = new Map(), counts = new Map();
     for (const f of all) {
-      if (!exOrigins.includes(f.origin) || f.dep_date < t0 || (q.exact && f.source === "aviasales")) continue;
+      if (!exOrigins.includes(f.origin) || f.dep_date < t0) continue;
       const reg = (places[f.dest] || [])[2];
       if (!reg) continue;
       if (f.ret_date) { const n = days(f.dep_date, f.ret_date); if (n < ex.min_nights || n > ex.max_nights) continue; }

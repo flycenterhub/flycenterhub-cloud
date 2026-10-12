@@ -270,8 +270,6 @@ def exotic(db, cfg, aviasales_on, dep_from="", dep_to="", ret_from="", ret_to=""
     today = dt.date.today()
     best, counts = {}, {}
     for r in db.q(f"SELECT * FROM fares WHERE origin IN ({marks}) AND dep_date >= ?", (*origins, today.isoformat())):
-        if exact and r["source"] == "aviasales":
-            continue
         p = places.get(r["dest"]) or {}
         reg = region_of(r["dest"], p.get("cc"), p.get("country_en"))
         if not reg:

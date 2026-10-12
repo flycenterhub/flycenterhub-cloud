@@ -304,11 +304,12 @@ class Engine:
         cfg = self.cfg = config.load()
         s = cfg.get("serpapi") or {}
         from .queries import exotic_origins
-        hours = s.get("explore_hours") or [10, 18]
         names = list(serpapi.EXPLORE_AREAS)
         origins = exotic_origins(cfg)
         # fiecare rulare: un oraș și jumătate din regiuni; după 2 zile toate combinațiile sunt actualizate
-        k = dt.date.today().toordinal() * len(hours) + slot
+        # contor salvat: alternează corect și când rulează o singură dată pe zi (laptopul oprit seara)
+        k = int(self.db.get_kv("explore_turn", 0) or 0)
+        self.db.set_kv("explore_turn", k + 1)
         origin = origins[(k // 2) % len(origins)]
         part = names if s.get("explore_all_each_run") else names[k % 2::2]
         limit = int(s.get("monthly_limit", 250))

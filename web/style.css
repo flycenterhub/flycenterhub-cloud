@@ -729,6 +729,8 @@ button.btn.book{font:inherit;cursor:pointer}
 }
 
 /* vremea medie pe card */
+.ex-sun { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: -2px 0 14px; font-size: 13.5px; }
+.ex-sun select { font: inherit; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
 .fc-wx { font-size: 12px; line-height: 1.35; color: var(--text-2); display: flex; align-items: baseline; gap: 5px; }
 
 /* escale făcute de tine */

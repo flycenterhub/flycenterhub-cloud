@@ -12,7 +12,7 @@ from .. import net
 from ..airlines import RYANAIR_CODES, WIZZ_CODES, PEGASUS_CODES, pegasus_link
 from ..regions import region_of
 from . import ryanair, wizzair
-from .common import date_range_end, google_flights_link, month_starts
+from .common import date_range_end, fmt_dur, google_flights_link, month_starts
 
 log = logging.getLogger("aviasales")
 
@@ -142,6 +142,9 @@ def _row(it, origin, one_way, end, rt, ex, cc_of, airlines):
         name = f"{name} · {transfers} {'escală' if transfers == 1 else 'escale'}"
     else:
         name = f"{name} · direct"
+    dur = fmt_dur(it.get("duration_to") or (0 if ret else it.get("duration")))
+    if dur:
+        name = f"{name} · ⏱ {dur}"
     return {
         "source": SOURCE, "origin": origin, "dest": dest, "dep_date": dep, "ret_date": ret,
         "price_eur": float(it["price"]), "price_orig": float(it["price"]), "currency": "EUR",

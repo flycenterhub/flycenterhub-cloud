@@ -1,15 +1,15 @@
 """Regiuni în afara Europei (pentru tab-ul „Exotice”)."""
 import re
 
-REGION_LABELS = {
-    "asia": "Asia",
+REGION_LABELS = {  # ordinea de afișare: întâi destinațiile de concediu
     "insule": "Insule exotice (Oceanul Indian)",
-    "orient": "Orientul Mijlociu & Caucaz",
-    "africa": "Africa",
-    "america_n": "America de Nord",
+    "asia": "Asia",
     "caraibe": "Caraibe & America Centrală",
+    "africa": "Africa",
     "america_s": "America de Sud",
+    "america_n": "America de Nord",
     "oceania": "Oceania & Pacific",
+    "orient": "Orientul Mijlociu & Caucaz",
 }
 
 _BY_REGION = {

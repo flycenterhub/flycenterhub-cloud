@@ -11,7 +11,7 @@ import urllib.parse
 
 from .. import net
 from ..airlines import pegasus_link
-from .common import google_flights_link
+from .common import fmt_dur, google_flights_link
 from ..db import now_str
 
 log = logging.getLogger("serpapi")
@@ -53,6 +53,13 @@ def _search(cfg, db, params):
     used[month] = used.get(month, 0) + 1
     db.set_kv("serpapi_used", used)
     return data
+
+
+def _airport(name):
+    """„Hamad International Airport” -> „Hamad” (numele scurt al aeroportului de escală)."""
+    for w in (" International Airport", " Intl Airport", " Airport", " International"):
+        name = name.replace(w, "")
+    return name.strip()
 
 
 def _options(data):
@@ -124,6 +131,12 @@ def check(cfg, db, origin, dest, dep, ret="", adults=1, children=0, infants=0):
     price_pp = round(total / pax, 2)  # Google Flights dă prețul total pentru toți pasagerii
     name = " + ".join(airlines) or "Google Flights"
     name += " · direct" if not stops else f" · {stops} {'escală' if stops == 1 else 'escale'}"
+    lays = [f"{_airport(l.get('name') or l.get('id') or '')} {fmt_dur(l.get('duration'))}".strip()
+            for l in best.get("layovers") or []]
+    if lays:
+        name += f" ({', '.join(lays)})"
+    if fmt_dur(best.get("total_duration")):
+        name += f" · ⏱ {fmt_dur(best.get('total_duration'))}"
     first = segs[0] if segs else {}
     # „Rezervă” = formularul de rezervare Google pentru exact acest zbor (redirecționează la vânzător);
     # dacă nu există, căutarea Google Flights pe ruta și datele exacte
@@ -184,6 +197,8 @@ def explore(cfg, db, origin="BUD", areas=None):
             stops = int(x.get("number_of_stops") or 0)
             airline = (x.get("airline") or "Google Flights").replace(" și ", " + ").replace(" and ", " + ")
             airline += " · direct" if not stops else f" · {stops} {'escală' if stops == 1 else 'escale'}"
+            if fmt_dur(x.get("flight_duration")):
+                airline += f" · ⏱ {fmt_dur(x.get('flight_duration'))}"
             rows.append({
                 "source": SOURCE, "origin": origin, "dest": code, "dep_date": dep, "ret_date": ret,
                 "price_eur": float(price), "price_orig": float(price), "currency": "EUR",

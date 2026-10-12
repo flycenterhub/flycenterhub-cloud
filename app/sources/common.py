@@ -64,6 +64,17 @@ def scan_routes(name, pairs, fetch_route, info, progress, stop, throttle):
                 throttle.sleep(5)
 
 
+def fmt_dur(minutes):
+    """Durata zborului: 870 -> „14h 30m” (gol dacă lipsește)."""
+    try:
+        m = int(minutes or 0)
+    except (TypeError, ValueError):
+        return ""
+    if m <= 0:
+        return ""
+    return f"{m // 60}h {m % 60:02d}m" if m >= 60 else f"{m}m"
+
+
 def date_range_end(months_ahead):
     return dt.date.today() + dt.timedelta(days=int(months_ahead * 30.5))
 
