@@ -93,3 +93,12 @@
   .hero-trip { align-self: flex-start; }
 }
 @media (prefers-reduced-motion: reduce) { .hero-go, .hero-chip { transition: none; } .hero-loading .spin { animation: none; } }
+
+/* Pozele care se schimbă singure (hero.js → .hero-sl). Umbra pentru text e peste poze; textul și căutarea deasupra. */
+.hero-sl { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.hero-sl i { position: absolute; inset: 0; background: center 60% / cover no-repeat; opacity: 0; transform: scale(1.05); transition: opacity 1.6s ease; }
+.hero-sl i.on { opacity: 1; animation: hero-zoom 9s ease-out forwards; }
+.hero-sl::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4, 28, 52, .40) 0%, rgba(4, 28, 52, .08) 38%, rgba(4, 28, 52, 0) 60%, rgba(4, 28, 52, .28) 100%); }
+.hero-in > :not(.hero-sl) { position: relative; z-index: 1; }
+@keyframes hero-zoom { from { transform: scale(1.05); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .hero-sl i { transition: none; } .hero-sl i.on { animation: none; transform: none; } }

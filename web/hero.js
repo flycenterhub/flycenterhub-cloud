@@ -103,6 +103,7 @@
     const sel = (v, cur) => v === cur ? " selected" : "";
     return `
       <div class="hero-in">
+        <div class="hero-sl" aria-hidden="true"><i></i><i></i></div>
         <div class="hero-txt">
           <h2 class="hero-h">Lumea e mai <span class="script">aproape</span> decât crezi.</h2>
           <p class="hero-p">Verificăm zilnic mii de zboruri din Timișoara, Cluj, Oradea, București și Budapesta. Tu alegi doar destinația, noi găsim cel mai bun preț.</p>
@@ -146,6 +147,50 @@
       anchor.before(el);
     }
     el.innerHTML = formHtml() + resultsHtml();
+    slidesMount();
+  }
+
+  // ---------- pozele de sus care se schimbă singure (Unsplash, gratuite; legate direct de la Unsplash, mărime după ecran) ----------
+  const SLIDES = ["hero-bg.jpg", // Seychelles (Wikimedia), prima ca rezervă
+    "photo-1590523277543-a94d2e4eb00b", "photo-1620065487644-1080510335f5", "photo-1516815231560-8f41ec531527",
+    "photo-1573843981267-be1999ff37cd", "photo-1576158831003-d41033ec31fd", "photo-1467377791767-c929b5dc9a23",
+    "photo-1738762932370-468a90e0ff68", "photo-1706461168280-da6986cd91ec", "photo-1652842183703-47c2f7bb8c3c",
+    "photo-1580725869538-9b164c27c44f", "photo-1534008897995-27a23e859048", "photo-1506665531195-3566af2b4dfa",
+    "photo-1531761535209-180857e963b9", "photo-1575999502951-4ab25b5ca889", "photo-1646668072507-b2215b873c70",
+    "photo-1665449417444-fe7fec4b7425", "photo-1577717903315-1691ae25ab3f", "photo-1555400038-63f5ba517a47",
+    "photo-1544644181-1484b3fdfc62", "photo-1515238152791-8216bfdf89a7", "photo-1507525428034-b723cf961d3e",
+    "photo-1468413253725-0d5181091126", "photo-1437719417032-8595fd9e9dc6", "photo-1618064541372-289bdb6f5b7b",
+    "photo-1617362985992-d0b6814cacef", "photo-1553829176-61484f865ac3", "photo-1596250470244-d172e7eb4054",
+    "photo-1537640685236-a9df2496e232", "photo-1513415277900-a62401e19be4", "photo-1507187632231-5beb21a654a2"];
+  const SL_EVERY = 7000;
+  const SL_STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const SL = { cur: Math.floor(Math.random() * SLIDES.length), timer: 0 };
+  function slideUrl(i) {
+    const id = SLIDES[i];
+    if (!id.startsWith("photo-")) return innerWidth <= 560 ? "hero-bg-1280.jpg" : id;
+    const box = $(".hero-in"), dpr = Math.min(devicePixelRatio || 1, 2);
+    const w = box ? Math.max(box.offsetWidth, box.offsetHeight * 1.6) : innerWidth;
+    const px = Math.min(2400, Math.ceil(w * dpr / 200) * 200);
+    return `https://images.unsplash.com/${id}?w=${px}&q=80&auto=format&fit=crop`;
+  }
+  function slidesMount() { // după fiecare render: arată imediat poza curentă (fără fade)
+    const [a] = document.querySelectorAll(".hero-sl i");
+    if (!a) return;
+    a.style.transition = "none"; a.style.backgroundImage = `url("${slideUrl(SL.cur)}")`; a.classList.add("on");
+    requestAnimationFrame(() => requestAnimationFrame(() => { a.style.transition = ""; }));
+    if (!SL_STILL && !SL.timer) SL.timer = setTimeout(slideNext, SL_EVERY);
+  }
+  function slideNext() {
+    SL.timer = 0;
+    if (document.hidden) { SL.timer = setTimeout(slideNext, SL_EVERY); return; }
+    const next = (SL.cur + 1) % SLIDES.length, url = slideUrl(next), img = new Image();
+    img.onload = () => { // schimbăm doar după ce poza s-a descărcat complet
+      const els = [...document.querySelectorAll(".hero-sl i")], on = els.find(x => x.classList.contains("on")), off = els.find(x => x !== on);
+      if (on && off) { off.style.backgroundImage = `url("${url}")`; off.classList.add("on"); on.classList.remove("on"); }
+      SL.cur = next; SL.timer = setTimeout(slideNext, SL_EVERY);
+    };
+    img.onerror = () => { SL.cur = next; SL.timer = setTimeout(slideNext, 500); }; // poză indisponibilă: sărim peste
+    img.src = url;
   }
 
   function readForm() {
