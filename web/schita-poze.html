@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poze care se rotesc</title>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #eef5f4; color: #0b0b0b; font: 15px/1.5 "Plus Jakarta Sans", system-ui, sans-serif; }
+  .wrap { max-width: 1150px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; margin: 4px 0; }
+  h2 { font-size: 17px; margin: 26px 0 4px; }
+  .lead { color: #52514e; margin: 0 0 14px; font-size: 14px; }
+  .hero { position: relative; height: 470px; border-radius: 24px; overflow: hidden; color: #fff; }
+  .slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 1.6s ease; transform: scale(1.04); }
+  .slide.on { opacity: 1; animation: zoom 9s ease-out forwards; }
+  @keyframes zoom { from { transform: scale(1.04); } to { transform: scale(1.0); } }
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4,28,52,.38) 0%, rgba(4,28,52,.05) 40%, rgba(4,28,52,0) 60%, rgba(4,28,52,.3) 100%); }
+  .hero-t { position: absolute; z-index: 1; left: 28px; top: 26px; right: 28px; text-shadow: 0 2px 14px rgba(0,0,0,.4); }
+  .hero-t h3 { margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -.02em; }
+  .hero-t i { font: 400 50px "Great Vibes", cursive; color: #fff3c4; }
+  .place { position: absolute; z-index: 1; left: 28px; bottom: 18px; font-weight: 700; font-size: 14px; background: rgba(0,0,0,.3); backdrop-filter: blur(6px); padding: 5px 12px; border-radius: 999px; }
+  .dots { position: absolute; z-index: 1; right: 22px; bottom: 22px; display: flex; gap: 6px; }
+  .dots span { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.5); cursor: pointer; }
+  .dots span.on { background: #fff; width: 22px; border-radius: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .ph { position: relative; border-radius: 14px; overflow: hidden; aspect-ratio: 16/10; background: #cfe3e3; cursor: pointer; }
+  .ph img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s; }
+  .ph:hover img { transform: scale(1.04); }
+  .ph b { position: absolute; left: 8px; top: 8px; background: #0b0b0b; color: #fff; border-radius: 8px; padding: 0 8px; font-size: 13px; }
+  .ph small { position: absolute; left: 8px; bottom: 8px; color: #fff; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+  .ph.sel { outline: 4px solid #ff6b4a; outline-offset: -4px; }
+  .ph.sel::after { content: "✓ în rotație"; position: absolute; right: 8px; top: 8px; background: #ff6b4a; color: #fff; font-size: 12px; font-weight: 800; border-radius: 8px; padding: 1px 8px; }
+  .note { font-size: 13px; background: #fff6d6; border: 1px solid #ecd98a; color: #5c4a00; border-radius: 10px; padding: 8px 12px; margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Poze de vacanță care se schimbă singure</h1>
+  <p class="lead">Sus e cum ar arăta pe site: la fiecare 7 secunde se schimbă lin în următoarea. Mai jos sunt toate pozele găsite; <b>apasă pe ele</b> ca să le pui/scoți din rotație, apoi spune-mi numerele preferate.</p>
+
+  <div class="hero" id="hero">
+    <div class="hero-t"><h3>Lumea e mai <i>aproape</i> decât crezi.</h3></div>
+    <div class="place" id="place"></div>
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <h2>Toate pozele găsite (Unsplash, gratuite și pentru site-uri comerciale)</h2>
+  <div class="grid" id="grid"></div>
+  <div class="note">Pozele de pe Unsplash se pot folosi gratuit, fără credit obligatoriu (îl punem totuși discret, e frumos față de fotograf). Le descarc la 1920px pentru calculator și 1280px pentru telefon, ca să fie clare.</div>
+</div>
+<script>
+const P = [
+  ["k9Zeq6EH_bk","photo-1590523277543-a94d2e4eb00b","Maldive · bungalow pe apă",1],
+  ["lVRolxDY5q0","photo-1620065487644-1080510335f5","Maldive · ponton spre insulă",1],
+  ["M1ObxvsWVhY","photo-1516815231560-8f41ec531527","Maldive · ponton și barcă",0],
+  ["xPsFXsbXJRg","photo-1573843981267-be1999ff37cd","Maldive · resort din aer",0],
+  ["hKOLya_3VzA","photo-1576158831003-d41033ec31fd","Maldive · hamac pe cocotier",0],
+  ["9H6Big","photo-1467377791767-c929b5dc9a23","Maldive · palmieri și lagună",0],
+  ["oSIoto5nhqU","photo-1738762932370-468a90e0ff68","Bora Bora · apă cristalină",1],
+  ["pdjx5z2fpr0","photo-1706461168280-da6986cd91ec","Bora Bora · insula din aer",0],
+  ["TOvYrc0D9y4","photo-1652842183703-47c2f7bb8c3c","Bora Bora · lagună cu palmieri",0],
+  ["SjCHKiGVWH4","photo-1580725869538-9b164c27c44f","Bora Bora · muntele Otemanu",0],
+  ["TejFa7VW5e4","photo-1534008897995-27a23e859048","Thailanda · Maya Bay",1],
+  ["BU6lABNbTpA","photo-1506665531195-3566af2b4dfa","Thailanda · Phi Phi",0],
+  ["3T9dDY0WqDI","photo-1531761535209-180857e963b9","Filipine · El Nido",0],
+  ["e6dRLBx6Kg8","photo-1575999502951-4ab25b5ca889","Zanzibar · plajă și ponton",1],
+  ["G4zORfstMW0","photo-1646668072507-b2215b873c70","Zanzibar · hamac între palmieri",0],
+  ["rXmF3MslLCY","photo-1665449417444-fe7fec4b7425","Zanzibar · palmieri și apă",0],
+  ["exFdOWkYBQw","photo-1577717903315-1691ae25ab3f","Bali · Kelingking",1],
+  ["2WlTWZLnRc","photo-1555400038-63f5ba517a47","Bali · orezării Tegallalang",0],
+  ["U_i6h9Y50wQ","photo-1544644181-1484b3fdfc62","Bali · templul Ulun Danu",0],
+  ["HfIex7qwTlI","photo-1515238152791-8216bfdf89a7","Caraibe · cocotier la mal",1],
+  ["KMn4VEeEPR8","photo-1507525428034-b723cf961d3e","Caraibe · plajă la apus",0],
+  ["U6t80TWJ1DM","photo-1468413253725-0d5181091126","Caraibe · țărm și nori",0],
+  ["n7DY58YFg9E","photo-1437719417032-8595fd9e9dc6","Caraibe · barcă lângă palmieri",0],
+  ["SBOHLtENzEY","photo-1618064541372-289bdb6f5b7b","Caraibe · plajă din aer",0],
+  ["HoNnEDKIar4","photo-1617362985992-d0b6814cacef","Seychelles · barcă și palmieri",0],
+  ["jPmurJKSL_0","photo-1553829176-61484f865ac3","Seychelles · stânci de granit",0],
+  ["vqBajUZQfTE","photo-1596250470244-d172e7eb4054","Seychelles · golf verde",0],
+  ["REz1OCM2fmY","photo-1537640685236-a9df2496e232","Mauritius · cocotier la mal",1],
+  ["ByAHlRiTQjo","photo-1513415277900-a62401e19be4","Mauritius · insula din aer",0],
+  ["wAn4RfmXtxU","photo-1507187632231-5beb21a654a2","Mauritius · palmieri reflectați",0],
+];
+const url = (id, w) => `https://images.unsplash.com/${id}?w=${w}&q=80&auto=format&fit=crop`;
+const hero = document.getElementById("hero"), grid = document.getElementById("grid");
+let cur = 0, timer;
+function rotation() { return P.filter(p => p[3]); }
+function build() {
+  hero.querySelectorAll(".slide").forEach(s => s.remove());
+  const r = rotation();
+  r.forEach((p, i) => { const d = document.createElement("div"); d.className = "slide"; d.style.backgroundImage = `url(${url(p[1], 1600)})`; hero.prepend(d); });
+  document.getElementById("dots").innerHTML = r.map((_, i) => `<span data-i="${i}"></span>`).join("");
+  cur = 0; show(0);
+}
+function show(i) {
+  const s = [...hero.querySelectorAll(".slide")].reverse(), r = rotation();
+  if (!r.length) return;
+  cur = (i + r.length) % r.length;
+  s.forEach((el, k) => el.classList.toggle("on", k === cur));
+  document.querySelectorAll("#dots span").forEach((el, k) => el.classList.toggle("on", k === cur));
+  document.getElementById("place").textContent = "📍 " + r[cur][2];
+  clearTimeout(timer); timer = setTimeout(() => show(cur + 1), 7000);
+}
+document.getElementById("dots").onclick = e => { if (e.target.dataset.i) show(+e.target.dataset.i); };
+grid.innerHTML = P.map((p, i) => `<div class="ph${p[3] ? " sel" : ""}" data-i="${i}"><img loading="lazy" src="${url(p[1], 600)}" alt=""><b>${i + 1}</b><small>${p[2]}</small></div>`).join("");
+grid.onclick = e => { const el = e.target.closest(".ph"); if (!el) return; const p = P[+el.dataset.i]; p[3] = p[3] ? 0 : 1; el.classList.toggle("sel", !!p[3]); build(); };
+build();
+</script>
+</body>
+</html>
