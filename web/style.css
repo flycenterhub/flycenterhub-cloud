@@ -795,3 +795,27 @@ button.btn.book{font:inherit;cursor:pointer}
   opacity: .16; filter: blur(3px) saturate(.9);
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body::before { display: none; } }
+/* Antet (sus) și meniul de jos pe mobil: sticlă mată în tonurile mării/nisipului, nu alb. */
+:root:not([data-theme="dark"]) .top {
+  background: linear-gradient(100deg, rgba(214, 240, 242, .78) 0%, rgba(240, 246, 243, .72) 50%, rgba(252, 236, 220, .78) 100%);
+  backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom: 0;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 6px 24px -14px rgba(15, 90, 110, .45);
+}
+:root:not([data-theme="dark"]) .top::after { /* linie fină turcoaz → auriu → coral */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: linear-gradient(90deg, rgba(42, 170, 185, .7), rgba(201, 162, 77, .8), rgba(255, 120, 95, .7));
+}
+:root:not([data-theme="dark"]) .top .status-pill { background: rgba(255, 255, 255, .55); border-color: rgba(255, 255, 255, .8); }
+@media (max-width: 700px) {
+  :root:not([data-theme="dark"]) .tabs {
+    background: linear-gradient(100deg, rgba(214, 240, 242, .86), rgba(252, 236, 220, .86));
+    border-top: 1px solid rgba(255, 255, 255, .7); box-shadow: 0 -6px 24px -12px rgba(15, 90, 110, .35);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .top { background: var(--surface); box-shadow: none; border-bottom: 1px solid var(--border); }
+  :root:not([data-theme="light"]) .top::after { display: none; }
+  :root:not([data-theme="light"]) .top .status-pill { background: var(--surface-2); border-color: var(--border); }
+  :root:not([data-theme="light"]) .tabs { background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: none; border-top: 1px solid var(--border); }
+}
