@@ -99,7 +99,7 @@ a { color: var(--accent); }
 .num { font-variant-numeric: tabular-nums; }
 
 /* Header */
-.top { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20; }
+.top { background: var(--surface); border-bottom: 1px solid var(--border); position: relative; z-index: 20; /* rămâne sus, nu coboară la derulare */ }
 .top-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 12px; padding-bottom: 12px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 12px; }
 .logo { width: 46px; height: 46px; flex: 0 0 auto; border-radius: 50%; display: block; box-shadow: 0 1px 3px rgba(10, 22, 56, .25); }
