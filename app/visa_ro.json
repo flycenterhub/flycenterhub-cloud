@@ -1,0 +1,1092 @@
+{
+"AB": [
+"no",
+"Visa required",
+""
+],
+"AE": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"AF": [
+"yes2",
+"eVisa",
+"30 days"
+],
+"AG": [
+"yes",
+"Visa not required",
+"180 days"
+],
+"AI": [
+"yes",
+"Visa not required",
+"3 months"
+],
+"AL": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"AM": [
+"yes",
+"Visa not required",
+"180 days"
+],
+"AO": [
+"yes",
+"Visa not required",
+"30 days"
+],
+"AR": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"AS": [
+"no",
+"Visa required",
+""
+],
+"AT": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"AU": [
+"yes",
+"eVisitor",
+"90 days"
+],
+"AW": [
+"yes",
+"Visa not required",
+"30 days, extendable to 180 days"
+],
+"AZ": [
+"yes2",
+"eVisa",
+"30 days"
+],
+"BA": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"BB": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"BD": [
+"",
+"Visa on arrival",
+"30 days"
+],
+"BE": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"BF": [
+"yes2",
+"eVisa",
+"90 days"
+],
+"BG": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"BH": [
+"Optional",
+"eVisa / Visa on arrival",
+"30 days"
+],
+"BI": [
+"Optional",
+"eVisa / Visa on arrival",
+"1 month"
+],
+"BJ": [
+"yes2",
+"eVisa",
+"90 days"
+],
+"BM": [
+"yes",
+"Visa not required",
+"Up to 6 months, decided on arrival."
+],
+"BN": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"BO": [
+"yes",
+"Visa not required",
+"data-sort-value=\"90\"| 90 days"
+],
+"BR": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"BS": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"BT": [
+"yes2",
+"eVisa",
+""
+],
+"BW": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"BY": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"BZ": [
+"yes",
+"Visa not required",
+""
+],
+"CA": [
+"yes",
+"eTA / Visa not required",
+"6 months"
+],
+"CD": [
+"yes2",
+"eVisa",
+"7 days"
+],
+"CF": [
+"no",
+"Visa required",
+""
+],
+"CG": [
+"no",
+"Visa required",
+""
+],
+"CH": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"CL": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"CM": [
+"yes2",
+"eVisa",
+""
+],
+"CN": [
+"yes",
+"Visa not required",
+"30 days"
+],
+"CO": [
+"yes",
+"Visa not required",
+"180 days"
+],
+"CR": [
+"yes",
+"Visa not required",
+"180 days"
+],
+"CU": [
+"yes2",
+"eVisa",
+"90 days"
+],
+"CV": [
+"yes",
+"Visa not required",
+"30 days"
+],
+"CW": [
+"yes",
+"Visa not required",
+"3 months"
+],
+"CY": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"CZ": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"DE": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"DJ": [
+"Optional",
+"eVisa / Visa on arrival",
+"30 days"
+],
+"DK": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"DM": [
+"yes",
+"Visa not required",
+"180 days"
+],
+"DO": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"DZ": [
+"no",
+"Visa required",
+""
+],
+"EC": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"EE": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"EG": [
+"Optional",
+"eVisa / Visa on arrival",
+"30 days"
+],
+"ER": [
+"no",
+"Visa required",
+""
+],
+"ES": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"ET": [
+"Optional",
+"eVisa / Visa on arrival",
+"up to 90 days"
+],
+"FI": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"FJ": [
+"yes",
+"Visa not required",
+"120 days"
+],
+"FK": [
+"yes",
+"Visa not required",
+"1 month"
+],
+"FO": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"FR": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"GA": [
+"yes2",
+"eVisa",
+"90 days"
+],
+"GB": [
+"yes",
+"ETA UK",
+"6 months"
+],
+"GD": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"GE": [
+"yes",
+"Visa not required",
+"1 year"
+],
+"GG": [
+"yes",
+"Visa not required",
+""
+],
+"GH": [
+"yes2",
+"eVisa",
+"90 days"
+],
+"GI": [
+"yes",
+"Visa not required",
+""
+],
+"GL": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"GM": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"GN": [
+"yes2",
+"eVisa",
+"90 days"
+],
+"GQ": [
+"yes2",
+"eVisa",
+""
+],
+"GR": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"GT": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"GU": [
+"yes",
+"ESTA",
+"90 days (same as US)"
+],
+"GW": [
+"",
+"Visa on arrival",
+"90 days"
+],
+"GY": [
+"yes2",
+"eVisa",
+""
+],
+"HK": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"HN": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"HR": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"HT": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"HU": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"ID": [
+"Optional",
+"e-VOA / Visa on arrival",
+"30 days"
+],
+"IE": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"IL": [
+"yes",
+"ETA-IL",
+"90 days"
+],
+"IM": [
+"yes",
+"Visa not required",
+""
+],
+"IN": [
+"yes2",
+"eVisa",
+"30 days"
+],
+"IQ": [
+"yes2",
+"eVisa",
+"60 days"
+],
+"IR": [
+"yes2",
+"eVisa",
+"30 days"
+],
+"IS": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"IT": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"JE": [
+"yes",
+"Visa not required",
+""
+],
+"JM": [
+"",
+"Visa on arrival",
+""
+],
+"JO": [
+"Optional",
+"eVisa / Visa on arrival",
+"30 days"
+],
+"JP": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"KE": [
+"yes",
+"Electronic Travel Authorisation",
+"90 days"
+],
+"KG": [
+"Yes",
+"Visa not required",
+"60 days"
+],
+"KH": [
+"Optional",
+"eVisa / Visa on arrival",
+"30 days"
+],
+"KI": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"KM": [
+"",
+"Visa on arrival",
+"45 days"
+],
+"KN": [
+"yes",
+"ETA",
+"90 days"
+],
+"KP": [
+"no",
+"Visa required",
+""
+],
+"KR": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"KW": [
+"Optional",
+"eVisa / Visa on arrival",
+"90 days"
+],
+"KY": [
+"yes",
+"Visa not required",
+"6 months"
+],
+"KZ": [
+"yes",
+"Visa not required",
+"30 days"
+],
+"LA": [
+"Optional",
+"eVisa / Visa on arrival",
+"30 days"
+],
+"LB": [
+"",
+"Visa on arrival",
+"1 month"
+],
+"LC": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"LK": [
+"yes",
+"Electronic Travel Authorisation",
+"30 days"
+],
+"LR": [
+"yes2",
+"eVisa",
+"90 days"
+],
+"LS": [
+"yes",
+"Visa not required",
+"14 days"
+],
+"LT": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"LU": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"LV": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"LY": [
+"yes2",
+"eVisa",
+"30 days"
+],
+"MA": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"MC": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"MD": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"ME": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"MF": [
+"free",
+"Visa not required",
+"colspan=2"
+],
+"MG": [
+"Optional",
+"eVisa / Visa on arrival",
+"data-sort-value=\"60\"|60 days"
+],
+"MH": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"MK": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"ML": [
+"no",
+"Visa required",
+""
+],
+"MM": [
+"yes2",
+"eVisa",
+"28 days"
+],
+"MN": [
+"yes",
+"Visa not required",
+"30 days"
+],
+"MO": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"MP": [
+"yes",
+"ESTA",
+"90 days"
+],
+"MQ": [
+"free",
+"Visa not required",
+"colspan=2"
+],
+"MR": [
+"yes2",
+"eVisa",
+"30 days"
+],
+"MS": [
+"yes",
+"Visa not required",
+"6 months"
+],
+"MT": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"MU": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"MV": [
+"",
+"Visa on arrival",
+"30 days"
+],
+"MW": [
+"Optional",
+"eVisa / Visa on arrival",
+"90 days"
+],
+"MX": [
+"yes",
+"Visa not required",
+"180 days"
+],
+"MY": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"MZ": [
+"Optional",
+"eVisa / Visa on arrival",
+"30 days"
+],
+"NA": [
+"Optional",
+"eVisa / Visa on arrival",
+"3 months"
+],
+"NE": [
+"no",
+"Visa required",
+""
+],
+"NG": [
+"yes2",
+"eVisa",
+"90 days"
+],
+"NI": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"NL": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"NO": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"NP": [
+"Optional",
+"eVisa / Visa on arrival",
+"90 days"
+],
+"NR": [
+"no",
+"Visa required",
+""
+],
+"NU": [
+"yes",
+"Visa not required",
+"30 days"
+],
+"NY": [
+"yes",
+"Visa not required",
+"3 months"
+],
+"NZ": [
+"yes",
+"NZeTA",
+"90 days"
+],
+"OM": [
+"yes",
+"Visa not required",
+"14 days"
+],
+"PA": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"PE": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"PG": [
+"yes2",
+"eVisa",
+"60 days"
+],
+"PH": [
+"yes",
+"Visa not required",
+"30 days"
+],
+"PK": [
+"yes2",
+"eVisa",
+"90 days"
+],
+"PL": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"PR": [
+"yes",
+"ESTA",
+"90 days (same as US)"
+],
+"PS": [
+"yes",
+"Visa not required",
+""
+],
+"PT": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"PW": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"PY": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"QA": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"RS": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"RU": [
+"yes2",
+"eVisa",
+"30 days"
+],
+"RW": [
+"yes",
+"Visa not required",
+"30 days"
+],
+"SA": [
+"Optional",
+"eVisa / Visa on arrival",
+"90 days"
+],
+"SB": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"SC": [
+"yes",
+"ETA",
+"90 days"
+],
+"SD": [
+"no",
+"Visa required",
+""
+],
+"SE": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"SG": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"SI": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"SK": [
+"free",
+"Freedom of movement",
+"colspan=2"
+],
+"SL": [
+"Optional",
+"eVisa / Visa on arrival",
+"30 days"
+],
+"SN": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"SO": [
+"yes2",
+"eVisa",
+"30 days"
+],
+"SR": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"SS": [
+"yes2",
+"eVisa",
+"6 months"
+],
+"ST": [
+"yes",
+"Visa not required",
+"15 days"
+],
+"SV": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"SX": [
+"yes",
+"Visa not required",
+"3 months"
+],
+"SY": [
+"Optional",
+"eVisa / Visa on arrival",
+"30 days"
+],
+"SZ": [
+"yes",
+"Visa not required",
+"30 days"
+],
+"TC": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"TD": [
+"yes2",
+"eVisa",
+"90|90 days"
+],
+"TG": [
+"yes2",
+"eVisa",
+"15 days"
+],
+"TH": [
+"yes",
+"Visa not required",
+"60 days"
+],
+"TJ": [
+"yes",
+"Visa not required",
+"30 days"
+],
+"TL": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"TM": [
+"no",
+"Visa required",
+""
+],
+"TN": [
+"yes",
+"Visa not required",
+"3 months"
+],
+"TO": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"TR": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"TT": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"TV": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"TW": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"TZ": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"UA": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"UG": [
+"yes2",
+"eVisa",
+"3 months"
+],
+"US": [
+"no",
+"Visa required",
+""
+],
+"UY": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"UZ": [
+"yes",
+"Visa not required",
+"30 days"
+],
+"VC": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"VE": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"VG": [
+"yes",
+"Visa not required",
+"30 days, extensions possible"
+],
+"VI": [
+"yes",
+"ESTA",
+"90 days (same as US)"
+],
+"VN": [
+"yes",
+"Visa not required",
+"45 days"
+],
+"VU": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"WS": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"XK": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"YE": [
+"no",
+"Visa required",
+""
+],
+"ZA": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"ZM": [
+"yes",
+"Visa not required",
+"90 days"
+],
+"ZW": [
+"Optional",
+"eVisa / Visa on arrival",
+"1 month (extendable to 3 months)"
+]
+}
