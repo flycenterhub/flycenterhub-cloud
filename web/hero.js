@@ -266,8 +266,8 @@
   addEventListener("resize", () => { if (DD) ddClose(); });
 
   // ---------- pozele de sus care se schimbă singure (Unsplash, gratuite; legate direct de la Unsplash, mărime după ecran) ----------
-  const SLIDES = [ // toate de pe Unsplash (fără credit obligatoriu)
-    "photo-1590523277543-a94d2e4eb00b",
+  const SLIDES = ["hero-bg.jpg", // Seychelles (Wikimedia), prima ca rezervă
+    "photo-1590523277543-a94d2e4eb00b", "photo-1590523277543-a94d2e4eb00b",
     "photo-1620065487644-1080510335f5", "photo-1516815231560-8f41ec531527",
     "photo-1573843981267-be1999ff37cd", "photo-1576158831003-d41033ec31fd", "photo-1467377791767-c929b5dc9a23",
     "photo-1738762932370-468a90e0ff68", "photo-1706461168280-da6986cd91ec", "photo-1652842183703-47c2f7bb8c3c",
