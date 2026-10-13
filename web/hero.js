@@ -161,9 +161,84 @@
       const anchor = $("#trust") || $(".tabs");
       anchor.before(el);
     }
+    ddClose();
     el.innerHTML = formHtml() + resultsHtml();
+    ddEnhance();
     slidesMount();
   }
+
+  // ---------- meniuri proprii în locul listelor clasice ale browserului: un click oriunde pe câmp le deschide ----------
+  let DD = null; // {sel, menu, back}
+  function ddEnhance() {
+    for (const sel of document.querySelectorAll(".hf select")) {
+      sel.classList.add("hf-native"); sel.tabIndex = -1;
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "hf-btn"; b.dataset.for = sel.id;
+      b.setAttribute("aria-haspopup", "listbox"); b.setAttribute("aria-expanded", "false");
+      b.innerHTML = `<span class="hf-t">${esc(sel.selectedOptions[0]?.text || "")}</span><svg class="hf-chev" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      sel.after(b);
+    }
+  }
+  function ddClose() {
+    if (!DD) return;
+    const { menu, back, btn } = DD; DD = null;
+    btn?.setAttribute("aria-expanded", "false"); btn?.closest(".hf")?.classList.remove("open");
+    menu.classList.remove("in"); back?.classList.remove("in");
+    setTimeout(() => { menu.remove(); back?.remove(); }, 160);
+  }
+  function ddOpen(btn) {
+    const sel = document.getElementById(btn.dataset.for), field = btn.closest(".hf");
+    if (DD && DD.sel === sel) return ddClose();
+    ddClose();
+    const sheet = innerWidth <= 560;
+    const menu = document.createElement("div");
+    menu.className = "hdd" + (sheet ? " sheet" : ""); menu.setAttribute("role", "listbox");
+    const title = field.querySelector(".hf-l")?.textContent || "";
+    menu.innerHTML = (sheet ? `<div class="hdd-h">${esc(title)}</div>` : "") + [...sel.options].map(o =>
+      `<button type="button" role="option" class="hdd-o${o.selected ? " on" : ""}" aria-selected="${o.selected}" data-v="${esc(o.value)}"><span>${esc(o.text)}</span><svg viewBox="0 0 16 12" aria-hidden="true"><path d="M1.5 6.5l4 4 9-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`).join("");
+    let back = null;
+    if (sheet) { back = document.createElement("div"); back.className = "hdd-back"; document.body.append(back); }
+    document.body.append(menu);
+    if (!sheet) {
+      const r = field.getBoundingClientRect(), w = Math.max(r.width, 230);
+      menu.style.minWidth = w + "px";
+      menu.style.left = Math.max(8, Math.min(r.left + scrollX, scrollX + innerWidth - w - 8)) + "px";
+      const below = innerHeight - r.bottom, h = Math.min(menu.scrollHeight, 340);
+      menu.style.top = (below < h + 16 && r.top > below ? r.top + scrollY - h - 8 : r.bottom + scrollY + 8) + "px";
+    }
+    DD = { sel, menu, back, btn };
+    btn.setAttribute("aria-expanded", "true"); field.classList.add("open");
+    void menu.offsetHeight; // pornește animația de deschidere
+    menu.classList.add("in"); back?.classList.add("in");
+    const cur = menu.querySelector(".hdd-o.on") || menu.querySelector(".hdd-o");
+    cur?.scrollIntoView({ block: "nearest" }); cur?.focus({ preventScroll: true });
+  }
+  function ddPick(v) {
+    const { sel, btn } = DD;
+    ddClose();
+    if (sel.value === v) return;
+    sel.value = v;
+    if (btn) btn.querySelector(".hf-t").textContent = sel.selectedOptions[0]?.text || "";
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  document.addEventListener("click", e => {
+    const o = e.target.closest(".hdd-o");
+    if (o && DD) { ddPick(o.dataset.v); return; }
+    if (e.target.closest(".hdd")) return;
+    const f = e.target.closest(".hf");
+    const btn = f?.querySelector(".hf-btn");
+    if (btn) { e.preventDefault(); ddOpen(btn); return; }
+    if (DD) ddClose();
+  });
+  document.addEventListener("keydown", e => {
+    if (!DD) return;
+    const opts = [...DD.menu.querySelectorAll(".hdd-o")], i = opts.indexOf(document.activeElement);
+    if (e.key === "Escape") { const b = DD.btn; ddClose(); b?.focus(); e.preventDefault(); }
+    else if (e.key === "ArrowDown") { opts[Math.min(i + 1, opts.length - 1)]?.focus(); e.preventDefault(); }
+    else if (e.key === "ArrowUp") { opts[Math.max(i - 1, 0)]?.focus(); e.preventDefault(); }
+    else if (e.key === "Tab") ddClose();
+  });
+  addEventListener("resize", () => { if (DD) ddClose(); });
 
   // ---------- pozele de sus care se schimbă singure (Unsplash, gratuite; legate direct de la Unsplash, mărime după ecran) ----------
   const SLIDES = ["hero-bg.jpg", // Seychelles (Wikimedia), prima ca rezervă

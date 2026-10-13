@@ -114,3 +114,41 @@
 .hf input::placeholder { font-weight: 300; font-style: normal; }
 .hf-i { font-size: 14px; }
 .hero-go { font: 500 15.5px "Outfit", system-ui, sans-serif; letter-spacing: .02em; }
+
+/* Meniurile proprii (hero.js → ddOpen) */
+.hf select.hf-native { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.hf { position: relative; }
+.hf-btn { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
+  font-family: "Fraunces", Georgia, serif; font-size: 15px; font-weight: 300; font-variation-settings: "opsz" 24; color: var(--text); }
+.hf-t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hf-chev { width: 11px; height: 8px; flex: none; color: var(--muted); transition: transform .2s; }
+.hf.open .hf-chev { transform: rotate(180deg); }
+.hf.open { background: var(--accent-soft); }
+.hdd {
+  position: absolute; z-index: 200; max-height: 340px; overflow-y: auto; padding: 6px;
+  background: rgba(255, 255, 255, .97); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(15, 60, 80, .08); border-radius: 16px;
+  box-shadow: 0 24px 60px -18px rgba(8, 40, 60, .45), 0 4px 14px -6px rgba(8, 40, 60, .2);
+  opacity: 0; transform: translateY(-6px) scale(.98); transform-origin: top center; transition: opacity .16s ease, transform .16s ease;
+  scrollbar-width: thin;
+}
+.hdd.in { opacity: 1; transform: none; }
+.hdd-o {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; padding: 10px 14px; border: 0; border-radius: 11px;
+  background: none; cursor: pointer; text-align: left; color: #1d2a30;
+  font-family: "Fraunces", Georgia, serif; font-size: 15px; font-weight: 300; font-variation-settings: "opsz" 24;
+}
+.hdd-o svg { width: 14px; height: 11px; flex: none; color: #ff6b4a; opacity: 0; }
+.hdd-o:hover, .hdd-o:focus-visible { background: #eef6f6; outline: none; }
+.hdd-o.on { background: #fff1ea; font-weight: 400; }
+.hdd-o.on svg { opacity: 1; }
+.hdd-h { font: 500 11px "Outfit", system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 6px 14px 8px; }
+/* pe telefon: panou care urcă de jos */
+.hdd.sheet { position: fixed; left: 0; right: 0; bottom: 0; top: auto; max-height: 70vh; border-radius: 22px 22px 0 0; padding: 8px 10px calc(14px + env(safe-area-inset-bottom));
+  transform: translateY(100%); transition: transform .24s cubic-bezier(.2, .8, .2, 1), opacity .2s; }
+.hdd.sheet.in { transform: none; }
+.hdd.sheet::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 4px; background: #d5d9db; margin: 2px auto 6px; }
+.hdd.sheet .hdd-o { padding: 13px 14px; font-size: 16px; }
+.hdd-back { position: fixed; inset: 0; z-index: 199; background: rgba(5, 25, 40, .35); opacity: 0; transition: opacity .2s; }
+.hdd-back.in { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .hdd, .hdd.sheet, .hdd-back, .hf-chev { transition: none; } }
