@@ -24,6 +24,17 @@
   const beach = (dest, m) => { const [t, mm] = (CLIMATE[dest] || [])[m] || []; return t != null && t >= 21 && mm < 110; };
   const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  // numele în română pentru țările/orașele salvate în engleză (ca să găsești „Coreea de Nord”, „Phenian”, „Filipine”…)
+  const ALIAS = {
+    "north korea": "coreea de nord", "south korea": "coreea de sud", "philippines": "filipine", "brazil": "brazilia",
+    "cape verde": "capul verde", "colombia": "columbia", "dominican republic": "republica dominicana", "equatorial guinea": "guineea ecuatoriala",
+    "ethiopia": "etiopia", "guadeloupe": "guadelupa", "iraq": "irak", "kyrgyzstan": "kargazstan kirghizstan", "malaysia": "malaezia",
+    "mexico": "mexic", "new zealand": "noua zeelanda", "papua new guinea": "papua noua guinee", "south africa": "africa de sud",
+    "tajikistan": "tadjikistan", "u.s. virgin islands": "insulele virgine", "british virgin islands": "insulele virgine britanice",
+    "cayman islands": "insulele cayman", "reunion": "reunion", "pyongyang": "phenian", "beijing": "pekin", "seoul": "seul",
+    "tokyo": "tokio", "new delhi": "delhi", "male": "maldive", "denpasar (bali)": "bali indonezia", "mahe": "seychelles",
+  };
+  const alias = s => ALIAS[norm(s)] || "";
   const addDays = (s, n) => { const d = new Date(s + "T12:00"); d.setDate(d.getDate() + n); return iso(d); };
 
   function months() {
@@ -72,14 +83,14 @@
     const maxNights = H.when === "weekend" ? 4 : 28;
     rows = rows.filter(r => {
       if (r.trip !== H.trip) return false;
-      if (NOVAC.has(r.dest) || !r.dest_name || r.dest_name === r.dest) return false; // fără sens pentru vacanță / fără nume
+      if (!text && (NOVAC.has(r.dest) || !r.dest_name || r.dest_name === r.dest)) return false; // nu le propunem la idei, dar se găsesc dacă le scrii
       if (H.from !== "ALL" && r.origin !== H.from) return false;
       if (H.budget && r.price_eur > H.budget) return false;
       if (!(r.days_to_dep >= 1)) return false;
       if (w && r.trip === "RT" && r.ret_date > w.ret[1]) return false;
       if (r.trip === "RT" && r.nights != null && (r.nights < 2 || r.nights > maxNights)) return false;
       const region = reg.by[r.dest];
-      if (text) return [r.dest_name, r.country, r.dest].some(x => norm(x).includes(text));
+      if (text) return [r.dest_name, r.country, r.dest, alias(r.country), alias(r.dest_name)].some(x => norm(x).includes(text));
       if (H.where === "beach") return !INLAND.has(r.dest) && beach(r.dest, +r.dep_date.slice(5, 7) - 1);
       if (H.where === "city") return !region && !MOUNTAIN.has(r.dest) && !RESORT.has(r.dest);
       if (H.where === "exotic") return !!region;
