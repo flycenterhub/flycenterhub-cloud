@@ -2,7 +2,17 @@
    Modul separat: dacă nu-l mai vrem, ștergem <script src="hero.js"> și <link href="hero.css"> din index.html.
    Folosește funcțiile din app.js (api, flightCard, sunny, bestSeason, state…). */
 (function () {
-  const MOUNTAIN = new Set(["INN", "SZG", "GVA", "ZRH", "BSL", "TRN", "VRN", "BZO", "TSF", "BGY", "LYS", "GNB", "CMF", "SOF", "TAT", "KRK", "MUC", "MXP"]);
+  // doar orașe chiar la munte (Alpi, Tatra), nu aeroporturi de oraș mare „aproape de munte”
+  const MOUNTAIN = new Set(["INN", "SZG", "BZO", "GVA", "KLU", "GNB", "CMF", "SIR", "TAT", "GHV", // Alpi, Tatra, Brașov
+    "KTM", "IXL", "LPB", "FTE", "MDZ", "ALA", "SLC", "YYC", "DLI"]);                         // Himalaya, Anzi, Rockies, Tian Shan
+  // „La plajă”: orașe din interior sau metropole unde e doar cald, nu de plajă
+  const INLAND = new Set(["MAD", "SVQ", "ZAZ", "CAI", "SPX", "RAK", "OZZ", "AMM", "RUH", "ELQ", "MED", "LHE", "DEL", "BOM", "BKK", "DMK",
+    "KUL", "HKG", "SIN", "IST", "ESB", "CNX", "DLI", "KTM", "HAN", "MEX", "BOG", "MDE", "SCL", "JNB", "NBO", "ADD", "KGL", "TAS", "SKD",
+    "BHK", "UGC", "NQZ", "ALA", "BSZ", "DYU", "ASB", "EVN", "TBS", "THR", "BGW", "EBL", "SAO", "LIM", "LAS", "SLC", "PHX", "ATL", "CHI",
+    "SEL", "BJS", "PEK", "SGN", "BLR", "CCU", "PTY", "SAL", "SJO", "ACC", "MDZ", "LPB", "CBB", "FTE", "TNR", "BUE", "EZE", "GRU", "IXL", "JED", "SZX", "CAN", "SHA", "PVG", "TPE", "MNL", "SHJ", "DOH", "KWI", "BAH", "WUH", "HGH", "TYO", "NRT", "HND", "CTU", "CKG", "SIA", "ORN", "ALG", "TUN", "CMN", "TLS", "LYS", "BOD", "PRG", "VIE", "BER"]);
+  // „City break”: insule și stațiuni de plajă (nu sunt city break)
+  const RESORT = new Set(["HRG", "SSH", "RMF", "AYT", "TFS", "LPA", "PMI", "MAH", "ZTH", "CFU", "RHO", "JTR", "CHQ", "HER", "FNC", "PFO",
+    "AHO", "RMI", "FAO", "LEI", "CDT", "DJE", "MIR", "NBE", "MLA", "CAG", "CTA", "PMO", "SUF", "BRI", "PSR", "DBV", "TGD", "FMM", "SNN", "TGM", "GHV", "BBU", "BLL"]);
   const IDEAS = [
     ["any", "🌍", "Oriunde"], ["beach", "🏖️", "La plajă"], ["city", "🏙️", "City break"],
     ["exotic", "🌴", "Exotic"], ["ski", "⛷️", "La munte"],
@@ -62,6 +72,7 @@
     const maxNights = H.when === "weekend" ? 4 : 28;
     rows = rows.filter(r => {
       if (r.trip !== H.trip) return false;
+      if (NOVAC.has(r.dest) || !r.dest_name || r.dest_name === r.dest) return false; // fără sens pentru vacanță / fără nume
       if (H.from !== "ALL" && r.origin !== H.from) return false;
       if (H.budget && r.price_eur > H.budget) return false;
       if (!(r.days_to_dep >= 1)) return false;
@@ -69,15 +80,18 @@
       if (r.trip === "RT" && r.nights != null && (r.nights < 2 || r.nights > maxNights)) return false;
       const region = reg.by[r.dest];
       if (text) return [r.dest_name, r.country, r.dest].some(x => norm(x).includes(text));
-      if (H.where === "beach") return beach(r.dest, +r.dep_date.slice(5, 7) - 1);
-      if (H.where === "city") return !region && !MOUNTAIN.has(r.dest);
+      if (H.where === "beach") return !INLAND.has(r.dest) && beach(r.dest, +r.dep_date.slice(5, 7) - 1);
+      if (H.where === "city") return !region && !MOUNTAIN.has(r.dest) && !RESORT.has(r.dest);
       if (H.where === "exotic") return !!region;
-      if (H.where === "ski") return MOUNTAIN.has(r.dest) && [11, 0, 1, 2, 3].includes(+r.dep_date.slice(5, 7) - 1);
+      if (H.where === "ski") return MOUNTAIN.has(r.dest); // iarna schi, vara drumeții
       return true;
     });
     // o singură variantă pe destinație: cea mai ieftină
     const best = new Map();
-    for (const r of rows) { const c = best.get(r.dest); if (!c || r.price_eur < c.price_eur) best.set(r.dest, r); }
+    for (const r of rows) { // același oraș cu 2 coduri (ex. Baku GYD/BAK) = o singură destinație
+      const k = norm(r.dest_name) + "|" + norm(r.country), c = best.get(k);
+      if (!c || r.price_eur < c.price_eur) best.set(k, r);
+    }
     H.rows = [...best.values()].sort((a, b) => a.price_eur - b.price_eur)
       .map(r => reg.by[r.dest] ? { ...r, region: reg.by[r.dest], region_label: reg.labels[reg.by[r.dest]] } : r);
     H.label = summary();

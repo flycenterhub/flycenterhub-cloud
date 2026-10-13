@@ -526,12 +526,20 @@ async function loadSearch() {
   state.searchLoading = false;
   renderSearch(); renderDest();
 }
+/* destinații fără sens pentru o vacanță (zone de conflict / nerecomandate de MAE, orașe industriale sau
+   aeroporturi mici de tranzit găsite automat de Google/Aviasales) – nu le arătăm la exotice */
+const NOVAC = new Set([
+  "FNJ", "BGW", "EBL", "THR", "KBL", "ELQ", "MED", "LHE", "KHI", "DAC", "FNA", "SSG", "BSG", "NKC", "LOS", "GBE", "HGU",
+  "TUR", "PRA", "AKA", "GYS", "KOW", "YIW", "CGO", "WNZ", "URC", "CGQ", "NGB", "CIT", "AKX", "SCO", "URA", "GUW", "KGF", "PWQ",
+  "OSS", "NCU", "NMA", "FEG", "TMJ", "AZN", "IYO", "LBD", "NAJ", "GNJ", "LWN", "JRH", "BPN", "BLA", "VLN", "PEI", "CIX", "SRZ", "CBB",
+  "MTY", "CRK", "HPH", "DAY", "CMH", "CVG", "SWF", "SBY", "ONT", "GRR", "FLO", "YWG", "YEA", "DTT"]);
 let exoticSeq = 0;
 async function loadExotic() {
   if (datesInvalid()) { renderExotic(); return; }
   const seq = ++exoticSeq;
   try {
     const res = await api(`/api/exotic?${dateQuery()}`);
+    if (res?.fares) res.fares = res.fares.filter(r => !NOVAC.has(r.dest));
     if (seq === exoticSeq) state.exotic = res;
   } catch (e) { /* ignorat */ }
   renderExotic();
