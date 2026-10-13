@@ -1086,8 +1086,10 @@ function fcPhoto(r) {
   if (f.startsWith("local:")) {  // poză încărcată de pe laptop (în folderul photos/ al site-ului)
     return `<div class="fc-photo"><img src="photos/${esc(f.slice(6))}" alt="${esc(r.dest_name)}" loading="lazy" decoding="async" onerror="this.parentNode.remove()"></div>`;
   }
-  const src = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=500`;
-  return `<div class="fc-photo"><img src="${src}" alt="${esc(r.dest_name)}" loading="lazy" decoding="async" onerror="this.parentNode.remove()">` +
+  // poză clară pe orice ecran: browserul alege 500 / 960 / 1280 px (mărimi standard Wikimedia)
+  const fp = w => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=${w}`;
+  const set = `${fp(500)} 500w, ${fp(960)} 960w, ${fp(1280)} 1280w`;
+  return `<div class="fc-photo"><img src="${fp(960)}" srcset="${set}" sizes="(max-width: 640px) 100vw, 420px" alt="${esc(r.dest_name)}" loading="lazy" decoding="async" onerror="this.parentNode.remove()">` +
     `<a class="fc-credit" href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(f)}" target="_blank" rel="noopener" title="Foto: Wikimedia Commons (licență liberă) — vezi autorul">©</a></div>`;
 }
 /* ---------- vremea medie în luna zborului (NASA POWER, 2001–2020) ---------- */
