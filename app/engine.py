@@ -5,7 +5,7 @@ import threading
 import time
 import traceback
 
-from . import analysis, config, fx, telegram
+from . import analysis, config, fx, names_ro, telegram
 from .db import DB
 from .fmt import country_ro
 from .regions import region_of
@@ -225,7 +225,7 @@ class Engine:
         return url or f"{self.dashboard_url} (pe calculatorul tău)"
 
     def places(self):
-        return {r["code"]: {**r, "country": country_ro(r["country"]), "country_en": r["country"]}
+        return {r["code"]: {**r, "name": names_ro.city(r["code"], r["name"]), "country": country_ro(r["country"]), "country_en": r["country"]}
                 for r in self.db.q("SELECT * FROM places")}
 
     # ---------- site-uri de oferte ----------

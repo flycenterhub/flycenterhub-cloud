@@ -11,6 +11,7 @@ import json
 import logging
 import os
 
+from . import names_ro
 from . import config, extras, fx, net, photos, queries, visas, visitors
 from .db import now_str
 from .fmt import ORIGIN_NAMES, country_ro
@@ -20,7 +21,8 @@ log = logging.getLogger("publish")
 
 API = "https://api.github.com"
 SRC = ["ryanair", "wizzair", "aviasales", "google"]
-WEB_FILES = ["style.css", "app.js", "static-api.js", "logo.svg", "hero.js", "hero.css", "hero-bg.jpg", "hero-bg-1280.jpg"]
+WEB_FILES = ["style.css", "app.js", "static-api.js", "logo.svg", "hero.js", "hero.css", "hero-bg.jpg", "hero-bg-1280.jpg",
+             "og.jpg", "robots.txt", "sitemap.xml", "404.html"]
 # Autorul commit-urilor (ca să nu apară numele personal în depozit)
 BOT = {"name": "FlyCenterHub", "email": "noreply@flycenterhub.github.io"}
 
@@ -59,7 +61,7 @@ def build(engine):
         if p["code"] in codes:
             name = (p["name"] or "").strip() or p["code"]
             country = (p["country"] or "").strip()
-            places[p["code"]] = [ORIGIN_NAMES.get(p["code"], name), country_ro(country),
+            places[p["code"]] = [ORIGIN_NAMES.get(p["code"], names_ro.city(p["code"], name)), country_ro(country),
                                  region_of(p["code"], p.get("cc"), country)]
 
     stats = {f"{s['origin']}|{s['dest']}|{s['trip']}": [s["typical_eur"], s["min_prev_eur"], s["history_days"]]

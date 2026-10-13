@@ -294,7 +294,7 @@ function compareLinks(r) {
   const links = [
     ["Google Flights", r.gf_link],
     ["Skyscanner", `https://www.skyscanner.ro/transport/zboruri/${o.toLowerCase()}/${d.toLowerCase()}/${yymmdd(dep)}/${ret ? yymmdd(ret) + "/" : ""}?adults=1&currency=EUR`],
-    ["Kayak", `https://www.kayak.com/flights/${o}-${d}/${dep}${ret ? "/" + ret : ""}?sort=price_a`],
+    ["Kayak", `https://www.kayak.ro/flights/${o}-${d}/${dep}${ret ? "/" + ret : ""}?sort=price_a`],
     ["Momondo", `https://www.momondo.ro/flight-search/${o}-${d}/${dep}${ret ? "/" + ret : ""}?sort=price_a`],
     ["Kiwi", `https://www.kiwi.com/deep?from=${o}&to=${d}&departure=${dmy(dep)}${ret ? "&return=" + dmy(ret) : ""}&lang=ro&currency=EUR`],
     ["FlightHub", `https://www.flighthub.com/flight/search?seg0_from=${o}&seg0_to=${d}&seg0_date=${dep}` +
@@ -424,6 +424,17 @@ async function runVerify(btn) {
       if (pEl && pEl.classList.contains("p")) pEl.innerHTML = `${eur(r.price_eur)}<br><span class="muted" style="font-size:12px;font-weight:600">${fmtLei(r.price_ron)}</span>`;
       else if (pEl) pEl.textContent = eur(r.price_eur);
       if (leiEl) leiEl.textContent = fmtLei(r.price_ron) + (r.lei_exact ? " ✓" : "");
+      // și restul cifrelor din rând/card: totalul pe persoane și reducerea față de prețul obișnuit
+      const n = seats();
+      for (const el of box.querySelectorAll(".pax-total, .pax-seats"))
+        el.innerHTML = `👥 ${esc(paxLabel())}: <b>${eur(r.price_eur * n)}</b>${el.classList.contains("pax-total") ? ` · ${fmtLei(r.price_ron * n)}` : ""}`;
+      if (r.changed && r.old_price_eur) for (const el of box.querySelectorAll(".fc-disc, .disc-cell span")) {
+        const m = /([−+])(\d+)%/.exec(el.textContent);
+        if (!m) continue;
+        const d = (m[1] === "−" ? 1 : -1) * m[2] / 100, typical = r.old_price_eur / (1 - d), nd = Math.round((1 - r.price_eur / typical) * 100);
+        el.textContent = nd > 0 ? `−${nd}%` : `+${-nd}%`;
+        if (nd < 5 && el.classList.contains("fc-disc")) el.remove();
+      }
       const fresh = box.querySelector(".fresh");
       if (fresh) fresh.textContent = `✓ verificat acum la ${now}`;
       const extra = verifyExtra(r);
@@ -532,7 +543,9 @@ const NOVAC = new Set([
   "FNJ", "BGW", "EBL", "THR", "KBL", "ELQ", "MED", "LHE", "KHI", "DAC", "FNA", "SSG", "BSG", "NKC", "LOS", "GBE", "HGU",
   "TUR", "PRA", "AKA", "GYS", "KOW", "YIW", "CGO", "WNZ", "URC", "CGQ", "NGB", "CIT", "AKX", "SCO", "URA", "GUW", "KGF", "PWQ",
   "OSS", "NCU", "NMA", "FEG", "TMJ", "AZN", "IYO", "LBD", "NAJ", "GNJ", "LWN", "JRH", "BPN", "BLA", "VLN", "PEI", "CIX", "SRZ", "CBB",
-  "MTY", "CRK", "HPH", "DAY", "CMH", "CVG", "SWF", "SBY", "ONT", "GRR", "FLO", "YWG", "YEA", "DTT"]);
+  "MTY", "CRK", "HPH", "DAY", "CMH", "CVG", "SWF", "SBY", "ONT", "GRR", "FLO", "YWG", "YEA", "DTT",
+  // Rusia / Belarus (avertizări MAE): nu le propunem, dar se găsesc dacă le scrii
+  "MOW", "SVO", "DME", "VKO", "LED", "GRV", "OVB", "KZN", "AER", "KRR", "MRV", "UFA", "SVX", "KUF", "ROV", "MSQ"]);
 let exoticSeq = 0;
 async function loadExotic() {
   if (datesInvalid()) { renderExotic(); return; }
@@ -874,17 +887,18 @@ function renderLM() {
   el.innerHTML = datesBanner("Zborurile sunt") + `<div class="banner info">⏰ <div>Zboruri cu plecare în următoarele <b>${state.days} zile</b>, de la cel mai ieftin. Ideal pentru escapade spontane.</div></div>
   <div class="table-wrap stack"><table>
     <thead><tr><th>Plecare</th><th>Destinație</th><th>Când</th><th>Tip</th><th class="r">Preț</th><th class="r">vs. obișnuit</th><th>Companie</th><th></th></tr></thead>
-    <tbody>${rows.slice(0, 400).map(r => `<tr>
+    <tbody>${rows.slice(0, state.lmShown || 50).map(r => `<tr>
       <td class="m-hide" data-label="Plecare">${esc(r.origin_name)}</td>
       <td class="m-title"><span class="m-only">${esc(r.origin_name)} → </span><button class="cell-btn" data-route="${r.origin}|${r.dest}|${r.trip}"><b>${esc(r.dest_name)}</b></button> <span class="muted">${esc(r.country)}</span></td>
       <td data-label="Când">${whenText(r)} <span class="muted">(${inDays(r.days_to_dep)})</span></td>
       <td data-label="Tip">${tripLabel(r)}</td>
-      <td class="r num m-price" data-label="Preț"><span class="strong">${eur(r.price_eur)}</span><br><span class="muted" style="font-size:12px">${fmtLei(r.price_ron)}</span>${seats() > 1 ? `<br><span style="font-size:12px">👥 ${seats()} locuri: <b>${eur(r.price_eur * seats())}</b></span>` : ""}</td>
-      <td class="r num" data-label="vs. obișnuit">${r.discount_pct == null ? "–" : r.discount_pct > 0 ? `<span style="color:var(--good-text);font-weight:700">−${Math.round(r.discount_pct)}%</span>` : `<span class="muted">+${Math.round(-r.discount_pct)}%</span>`}</td>
+      <td class="r num m-price" data-label="Preț"><span class="strong">${eur(r.price_eur)}</span><br><span class="muted lei" style="font-size:12px">${fmtLei(r.price_ron)}</span>${seats() > 1 ? `<br><span class="pax-seats" style="font-size:12px">👥 ${esc(paxLabel())}: <b>${eur(r.price_eur * seats())}</b></span>` : ""}</td>
+      <td class="r num disc-cell" data-label="vs. obișnuit">${r.discount_pct == null ? "–" : r.discount_pct > 0 ? `<span style="color:var(--good-text);font-weight:700">−${Math.round(r.discount_pct)}%</span>` : `<span class="muted">+${Math.round(-r.discount_pct)}%</span>`}</td>
       <td class="muted" data-label="Companie">${esc(r.airline || "")}${unverified(r) ? ` · <span class="unv-text">🔎 de verificat</span>` : ""}</td>
       <td class="m-actions"><div class="row-actions">${(favRows.set(favKey(r), r), favBtn(r))}${bookBtn(r.link || r.gf_link, r.airline)}${verifyBtn(r)}</div>
         <div class="fresh row-checked">${r.source === "aviasales" ? "🔎 preț găsit recent, de verificat" : checkedLabel(r.last_seen)}</div></td>
-    </tr>`).join("")}</tbody></table></div>`;
+    </tr>`).join("")}</tbody></table></div>` +
+    (rows.length > (state.lmShown || 50) ? `<div class="hero-more"><button class="btn ghost" id="lm-more">Arată mai multe (${rows.length - (state.lmShown || 50)} rămase)</button></div>` : "");
 }
 
 /* ---------- randare: destinații ---------- */
@@ -922,8 +936,9 @@ function destBook(d, origins) {
   const c = d.cells[i];
   if (!c) return "";
   const from = ORIGIN_NAMES[origins[i]] || origins[i];
-  if (c.link) return bookBtn(c.link, "");
-  if (c.out_link && c.back_link) return `${bookBtn(c.out_link, "", "Rezervă dus")} ${bookBtn(c.back_link, "", "Rezervă întors")}`;
+  // spune clar din ce oraș e zborul cel mai ieftin (nu neapărat orașul tău)
+  if (c.link) return bookBtn(c.link, "", `Rezervă din ${from}`);
+  if (c.out_link && c.back_link) return `${bookBtn(c.out_link, "", `Rezervă dus din ${from}`)} ${bookBtn(c.back_link, "", "Rezervă întors")}`;
   return "";
 }
 function destFromSearch() {
@@ -958,6 +973,7 @@ function renderPosts() {
 }
 
 /* ---------- ajutor ---------- */
+const CONTACT_EMAIL = ""; // adresa de contact a site-ului (o completează proprietarul)
 function renderHelp() {
   const s = state.status?.settings || {};
   const r = s.rules || {};
@@ -989,6 +1005,13 @@ function renderHelp() {
   <p><b>Nu vindem bilete și nu primim plata ta.</b> Când apeși „Rezervă” ajungi pe site-ul companiei aeriene sau al agenției, unde vezi prețul final, alegi bagajele și plătești. Nu adăugăm niciun comision.</p>
   <p><b>Cât de sigure sunt prețurile:</b> „✓ Preț real” și „🕒 Preț verificat acum X ore” = preț luat direct de la companie sau confirmat pe Google Flights. „🔎 De verificat” = preț găsit recent în căutările altor călători (Aviasales), care trebuie confirmat. Prețurile low-cost se schimbă des, așa că prețul final e cel de pe site-ul unde plătești.</p>
   <p><b>Vize și acte (🛂):</b> pentru cetățenii români, turism, după datele publice IATA (prin Wikipedia), actualizate ${esc(state.visasUpdated || "2026")}. Sunt orientative: verifică întotdeauna pe <a href="${MAE_URL}" target="_blank" rel="noopener">site-ul MAE</a> înainte de plecare.</p>
+  <h2 id="contact">✉️ Contact</h2>
+  <p>${CONTACT_EMAIL ? `Ne poți scrie la <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a> – pentru întrebări, greșeli găsite pe site sau colaborări.` : "Adresa de contact va fi afișată aici în curând."}</p>
+  <h2 id="termeni">📄 Termeni de utilizare</h2>
+  <p>FlyCenterHub este un serviciu gratuit de informare: arată prețuri găsite automat la companii aeriene și agenții. <b>Nu suntem agenție de turism</b>, nu vindem bilete, nu încasăm plăți și nu răspundem pentru rezervările făcute pe alte site-uri. Prețurile, orarele, informațiile despre vize și vreme sunt orientative și se pot schimba oricând; prețul și condițiile valabile sunt cele de pe site-ul unde plătești. Folosind site-ul, ești de acord cu aceste condiții.</p>
+  <p><b>Linkuri și comisioane:</b> în prezent nu primim comisioane pentru rezervări. Dacă vom folosi linkuri de afiliere (parteneri care ne plătesc un mic comision când rezervi, fără cost în plus pentru tine), le vom marca clar pe site.</p>
+  <h2 id="confidentialitate">🔒 Confidențialitate (GDPR)</h2>
+  <p>Nu cerem cont, nume, email sau date de plată. <b>Nu folosim cookie-uri.</b> Numărăm vizitele anonim cu <a href="https://www.goatcounter.com/help/privacy" target="_blank" rel="noopener">GoatCounter</a> (fără cookie-uri, fără date personale, fără urmărire între site-uri). Favoritele, tema aleasă și numărul de pasageri se păstrează doar în browserul tău (localStorage) și le poți șterge oricând din setările browserului. Când apeși „Rezervă” sau „Compară”, ajungi pe site-ul partenerului, care are propriile reguli de confidențialitate. Pozele sunt încărcate de pe Wikimedia Commons și Unsplash.</p>
   ${STATIC ? `<p>Sus vezi când au fost actualizate ultima dată prețurile.</p>` : `
   <h2>Notificări Telegram</h2>
   <p>${state.status?.telegram ? "✅ Active." : "Inactive."} Pentru configurare rulează <code>Configurare-Telegram.bat</code> din folderul aplicației.
@@ -1019,8 +1042,9 @@ function renderStatus() {
   } else if (last && STATIC) {
     const upd = st.updated_at || last.finished_at;
     const hours = (Date.now() - new Date(upd.replace(" ", "T")).getTime()) / 36e5;
-    el.innerHTML = `<span class="dot"></span>Prețuri actualizate ${ago(upd)}` +
-      `<span class="m-extra">${hours > 6 ? " · se reactualizează automat când pornește căutarea" : " · se actualizează automat"}</span>`;
+    // clar: când s-a publicat lista; fiecare card arată separat când i-a fost verificat prețul
+    el.innerHTML = `<span class="dot"></span>Listă actualizată ${ago(upd)}` +
+      `<span class="m-extra"> · fiecare companie e verificată complet la ~${st.settings?.scan_interval_hours ?? 3} ore; ora exactă e pe fiecare card</span>`;
   } else if (last) {
     const lab = last.status === "ok" ? "Actualizat" : last.status === "partial" ? "Actualizat parțial" : "Eroare la scanare";
     el.innerHTML = `<span class="dot"></span>${lab} ${ago(st.updated_at || last.finished_at)}<span class="m-extra"> · următoarea verificare la ${hhmm(st.next_check_at || st.next_scan_at)}${st.telegram ? " · Telegram ✓" : ""}</span>`;
@@ -1124,13 +1148,16 @@ function fcWeather(r, date = r.dep_date) {
 }
 async function loadData() {
   await Promise.all([photosP, climateP]);
-  const [deals, lm, dest, posts] = await Promise.all([
-    api(`/api/deals${exactQ()}`), api(`/api/lastminute?days=${state.days}${exactQ("&")}`), api(`/api/destinations${exactQ()}`), api("/api/posts"),
-  ]);
-  Object.assign(state, { deals, lm, dest, posts });
+  // întâi ce se vede imediat (fișiere mici); lista mare cu toate zborurile (Last minute, Caută, Exotice) vine după
+  const [deals, dest, posts] = await Promise.all([api(`/api/deals${exactQ()}`), api(`/api/destinations${exactQ()}`), api("/api/posts")]);
+  Object.assign(state, { deals, dest, posts, lm: state.lm || [] });
   renderAll();
-  loadSearch();
-  loadExotic();
+  const rest = async () => {
+    try { state.lm = await api(`/api/lastminute?days=${state.days}${exactQ("&")}`); renderAll(); } catch (e) { /* ignorat */ }
+    loadSearch();
+    loadExotic();
+  };
+  if (["lm", "search", "exotic", "escale"].includes(state.tab)) rest(); else setTimeout(rest, 1200);
 }
 function filtersSummary() {
   const n = [state.dep, state.origin !== "ALL", state.trip !== "ALL" && !state.dep, state.max, state.q.trim(), seats() > 1 || state.infants > 0, !state.exact].filter(Boolean).length;
@@ -1595,7 +1622,14 @@ function setTab(t) {
   if (!$(`#tab-${t}`)) t = "deals";
   state.tab = t;
   if (state.tabInit) gcEvent("tab: " + t); state.tabInit = true;
-  $$(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
+  $$(".tab").forEach(b => { b.classList.toggle("active", b.dataset.tab === t); b.setAttribute("aria-selected", b.dataset.tab === t ? "true" : "false"); });
+  { // pe telefon: tab-ul activ mereu întreg în bara de jos (nu tăiat la margine)
+    const bar = $(".tabs"), act = $(".tab.active");
+    if (bar && act && bar.scrollWidth > bar.clientWidth) {
+      const l = act.offsetLeft - bar.offsetLeft, r = l + act.offsetWidth;
+      if (l < bar.scrollLeft + 8 || r > bar.scrollLeft + bar.clientWidth - 8) bar.scrollLeft = Math.max(0, l - (bar.clientWidth - act.offsetWidth) / 2);
+    }
+  }
   for (const id of ["deals", "search", "lm", "dest", "map", "escale", "exotic", "favs", "help"]) $(`#tab-${id}`).hidden = id !== t;
   if (t === "map") renderMap();
   if (t === "escale") renderEscale();
@@ -1713,6 +1747,7 @@ document.addEventListener("click", async e => {
   if (ct) { ct.parentElement.classList.toggle("open"); return; }
   const gb = e.target.closest("[data-gfcheck]");
   if (gb) { runGfCheck(gb); return; }
+  if (e.target.closest("#lm-more")) { state.lmShown = (state.lmShown || 50) + 50; renderLM(); return; }
   const vb = e.target.closest("[data-verify]");
   if (vb) { runVerify(vb); return; }
   if (e.target.closest("[data-clear-dates]")) { clearDates(); return; }

@@ -788,7 +788,9 @@ button.btn.book{font:inherit;cursor:pointer}
 .sf-how ol { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; }
 .sf-how li + li { margin-top: 5px; }
 .sf-how b { color: var(--text); font-weight: 600; }
-.sf-legal { margin: 14px 2px 0; font-size: 11.5px; color: var(--muted); }
+.sf-links { margin: 14px 2px 0; font-size: 13px; }
+.sf-links a { color: var(--text-2); }
+.sf-legal { margin: 6px 2px 0; font-size: 11.5px; color: var(--text-2); }
 .sf-legal a { color: inherit; }
 @media (max-width: 860px) { .sf-grid { grid-template-columns: 1fr; } }
 
@@ -808,7 +810,7 @@ button.btn.book{font:inherit;cursor:pointer}
    Pentru a reveni la fundalul doar color, șterge blocul acesta (sau copiază backup-fundal-culoare/style.css). */
 :root:not([data-theme="dark"]) body::before {
   content: ""; position: fixed; inset: -20px; z-index: -1; pointer-events: none;
-  background: url("hero-bg-1280.jpg") center 60% / cover no-repeat;
+  background: url("hero-bg.jpg") center 60% / cover no-repeat; /* aceeași poză ca sus: o singură descărcare */
   opacity: .16; filter: blur(3px) saturate(.9);
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body::before { display: none; } }
@@ -836,3 +838,5 @@ button.btn.book{font:inherit;cursor:pointer}
   :root:not([data-theme="light"]) .top .status-pill { background: var(--surface-2); border-color: var(--border); }
   :root:not([data-theme="light"]) .tabs { background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: none; border-top: 1px solid var(--border); }
 }
+
+@media (max-width: 560px) { :root:not([data-theme="dark"]) body::before { background-image: url("hero-bg-1280.jpg"); } }

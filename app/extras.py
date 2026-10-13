@@ -215,6 +215,7 @@ def connections(db, cfg, per_route=4, cap=2500):
 def public_connections(db, cfg):
     """Pentru site: combinațiile + numele locurilor."""
     from .fmt import ORIGIN_NAMES, country_ro
+    from . import names_ro
     rows = connections(db, cfg)
     jaws = open_jaws(db, cfg)
     codes = ({c for r in rows for c in (r["origin"], r["hub"], r["dest"])}
@@ -222,7 +223,7 @@ def public_connections(db, cfg):
     names = {}
     for p in db.q("SELECT code, name, country FROM places"):
         if p["code"] in codes:
-            names[p["code"]] = [ORIGIN_NAMES.get(p["code"], (p["name"] or p["code"]).strip()), country_ro((p["country"] or "").strip())]
+            names[p["code"]] = [ORIGIN_NAMES.get(p["code"], names_ro.city(p["code"], (p["name"] or p["code"]).strip())), country_ro((p["country"] or "").strip())]
     return {"at": (db.get_kv("hub_fares") or {}).get("at"), "rows": rows, "exotic": jaws, "places": names}
 
 

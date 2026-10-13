@@ -1,7 +1,7 @@
 """Interogări pentru dashboard."""
 import datetime as dt
 
-from . import fx, telegram
+from . import fx, names_ro, telegram
 from .analysis import best_per_route
 from .fmt import ORIGIN_NAMES, country_ro, nights
 from .regions import REGION_LABELS, is_exotic_text, region_of
@@ -21,7 +21,7 @@ def _enrich(rows, places):
         r["trip"] = trip
         r["origin_name"] = ORIGIN_NAMES.get(r["origin"]) or (places.get(r["origin"]) or {}).get("name") or r["origin"]
         p = places.get(r["dest"]) or {}
-        r["dest_name"] = ORIGIN_NAMES.get(r["dest"]) or p.get("name") or r["dest"]
+        r["dest_name"] = ORIGIN_NAMES.get(r["dest"]) or names_ro.city(r["dest"], p.get("name")) or r["dest"]
         r["country"] = p.get("country") or ""
         r["nights"] = nights(r["dep_date"], r.get("ret_date"))
         if r.get("price_ron") is None:
@@ -98,7 +98,7 @@ def destinations(db, cfg, exact=False):
     places = _places(db)
     out = {}
     for r in rows:
-        d = out.setdefault(r["dest"], {"dest": r["dest"], "dest_name": (places.get(r["dest"]) or {}).get("name") or r["dest"],
+        d = out.setdefault(r["dest"], {"dest": r["dest"], "dest_name": names_ro.city(r["dest"], (places.get(r["dest"]) or {}).get("name")) or r["dest"],
                                        "country": (places.get(r["dest"]) or {}).get("country") or "",
                                        "OW": {}, "RT": {}, "min_ow": None, "min_rt": None, "newest": ""})
         d["newest"] = max(d["newest"], r["newest"] or "")
@@ -129,7 +129,7 @@ def route(db, origin, dest, exact=False):
     return {
         "origin": origin, "dest": dest,
         "origin_name": ORIGIN_NAMES.get(origin, origin),
-        "dest_name": (places.get(dest) or {}).get("name") or dest,
+        "dest_name": names_ro.city(dest, (places.get(dest) or {}).get("name")) or dest,
         "country": (places.get(dest) or {}).get("country") or "",
         "calendar_ow": cal, "calendar_rt": cal_rt, "history": hist,
         "cheapest": _enrich(fares, places), "stats": {s["trip"]: s for s in stats},

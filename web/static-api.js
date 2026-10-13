@@ -32,6 +32,26 @@
   }
   function gf(o, d, dep, ret) { return window.gfLink(o, d, dep, ret); }
 
+  /* zboruri care încă se pot rezerva și date plauzibile:
+     - fără zboruri deja plecate (azi: doar cu plecare peste cel puțin 3 ore)
+     - fără Băneasa (BBU: fără zboruri comerciale; codul apare greșit în unele surse)
+     - fără durate imposibile (ex. 2 escale în 3 ore) */
+  function alive(f) {
+    const t0 = today();
+    if (!f.dep_date || f.dep_date < t0) return false;
+    if (f.dep_date === t0) {
+      if (!f.dep_time) return false;
+      const [h, m] = f.dep_time.split(":").map(Number), now = new Date();
+      if (h * 60 + m < now.getHours() * 60 + now.getMinutes() + 180) return false;
+    }
+    if (f.origin === "BBU" || f.dest === "BBU") return false;
+    const a = f.airline || "", st = /(\d+) escal/.exec(a), du = /⏱ (\d+)h(?: (\d+)m)?/.exec(a);
+    if (st && du) { const min = +du[1] * 60 + (+du[2] || 0), n = +st[1]; if (min < n * 100 + 60) return false; }
+    else if (/1 escală|escală \(/.test(a) && du && +du[1] * 60 + (+du[2] || 0) < 160) return false;
+    return true;
+  }
+  window.flightAlive = alive;
+
   let faresP = null;
   function fares() {
     if (!faresP) {
@@ -44,7 +64,7 @@
         f.trip = f.ret_date ? "RT" : "OW";
         f.link = link(f);
         return f;
-      }));
+      }).filter(alive));
     }
     return faresP;
   }
@@ -290,7 +310,7 @@
       case "climate": return load("climate");
       case "visas": return load("visas");
       case "escale": return load("escale");
-      case "deals": return load(q.exact ? "deals_exact" : "deals");
+      case "deals": return (await load(q.exact ? "deals_exact" : "deals")).filter(alive);
       case "destinations": return load(q.exact ? "destinations_exact" : "destinations");
       case "posts": return load("posts");
       case "lastminute": return lastminute(q);

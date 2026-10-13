@@ -12,7 +12,11 @@
     "SEL", "BJS", "PEK", "SGN", "BLR", "CCU", "PTY", "SAL", "SJO", "ACC", "MDZ", "LPB", "CBB", "FTE", "TNR", "BUE", "EZE", "GRU", "IXL", "JED", "SZX", "CAN", "SHA", "PVG", "TPE", "MNL", "SHJ", "DOH", "KWI", "BAH", "WUH", "HGH", "TYO", "NRT", "HND", "CTU", "CKG", "SIA", "ORN", "ALG", "TUN", "CMN", "TLS", "LYS", "BOD", "PRG", "VIE", "BER"]);
   // „City break”: insule și stațiuni de plajă (nu sunt city break)
   const RESORT = new Set(["HRG", "SSH", "RMF", "AYT", "TFS", "LPA", "PMI", "MAH", "ZTH", "CFU", "RHO", "JTR", "CHQ", "HER", "FNC", "PFO",
-    "AHO", "RMI", "FAO", "LEI", "CDT", "DJE", "MIR", "NBE", "MLA", "CAG", "CTA", "PMO", "SUF", "BRI", "PSR", "DBV", "TGD", "FMM", "SNN", "TGM", "GHV", "BBU", "BLL"]);
+    "AHO", "RMI", "FAO", "LEI", "CDT", "DJE", "MIR", "NBE", "MLA", "CAG", "CTA", "PMO", "SUF", "BRI", "PSR", "DBV", "TGD", "FMM", "SNN", "TGM", "BBU", "BLL",
+    "GZP", "BJV", "DLM", "BOJ", "VAR", "IBZ", "FUE", "ACE", "TCI", "TFN", "OLB", "JSI", "JKH", "LMP", "PXO", "PDL", "HOR", "PUY",
+    "TIV", "ECN", "KGS", "EFL", "PVK", "SMI", "KLX", "AOK", "JMK", "SPU", "ZAD", "BDS", 
+    "ARW", "BCM", "IAS", "SCV", "SBZ", "CND", "CRA", "OTP", "CLJ", "TSR", "OMR"]);
+  const CAUCASUS = new Set(["KUT", "TBS", "BUS", "EVN", "LWN", "GYD", "BAK", "NAJ", "GNJ"]);
   const IDEAS = [
     ["any", "🌍", "Oriunde"], ["beach", "🏖️", "La plajă"], ["city", "🏙️", "City break"],
     ["exotic", "🌴", "Exotic"], ["ski", "⛷️", "La munte"],
@@ -35,11 +39,17 @@
     "tokyo": "tokio", "new delhi": "delhi", "male": "maldive", "denpasar (bali)": "bali indonezia", "mahe": "seychelles",
   };
   const alias = s => ALIAS[norm(s)] || "";
+  // același oraș, aeroporturi diferite (Londra Luton/Stansted, Veneția Treviso/Marco Polo…) = o singură variantă
+  const CITY_OF = { SPX: "CAI", CAI: "CAI", TSF: "VCE", VCE: "VCE", CIA: "FCO", FCO: "FCO", LTN: "LON", STN: "LON", LGW: "LON", LHR: "LON",
+    BVA: "PAR", ORY: "PAR", CDG: "PAR", WMI: "WAW", WAW: "WAW", CRL: "BRU", BRU: "BRU", NYO: "STO", ARN: "STO", TRF: "OSL", OSL: "OSL",
+    DMK: "BKK", BKK: "BKK", HND: "TYO", NRT: "TYO", TYO: "TYO", PEK: "BJS", BJS: "BJS", ICN: "SEL", SEL: "SEL", GYD: "BAK", BAK: "BAK",
+    SAW: "IST", IST: "IST", MXP: "MIL", LIN: "MIL" };
   const addDays = (s, n) => { const d = new Date(s + "T12:00"); d.setDate(d.getDate() + n); return iso(d); };
 
   function months() {
     const now = new Date();
-    return Array.from({ length: 12 }, (_, i) => new Date(now.getFullYear(), now.getMonth() + i, 1))
+    const n = (state.status?.settings?.exotic?.months_ahead ?? 8); // datele merg atât de departe
+    return Array.from({ length: n }, (_, i) => new Date(now.getFullYear(), now.getMonth() + i, 1))
       .map(d => [`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, `${MONTHS_FULL[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? " " + d.getFullYear() : ""}`]);
   }
   // fereastra de plecare / întoarcere pentru „Când”
@@ -90,17 +100,22 @@
       if (w && r.trip === "RT" && r.ret_date > w.ret[1]) return false;
       if (r.trip === "RT" && r.nights != null && (r.nights < 2 || r.nights > maxNights)) return false;
       const region = reg.by[r.dest];
-      if (text) return [r.dest_name, r.country, r.dest, alias(r.country), alias(r.dest_name)].some(x => norm(x).includes(text));
+      if (text) return true; // filtrat mai jos: întâi după oraș, apoi după țară
       if (H.where === "beach") return !INLAND.has(r.dest) && beach(r.dest, +r.dep_date.slice(5, 7) - 1);
       if (H.where === "city") return !region && !MOUNTAIN.has(r.dest) && !RESORT.has(r.dest);
-      if (H.where === "exotic") return !!region;
+      if (H.where === "exotic") return !!region && !CAUCASUS.has(r.dest);
       if (H.where === "ski") return MOUNTAIN.has(r.dest); // iarna schi, vara drumeții
       return true;
     });
+    if (text) { // „Roma” = orașul Roma, nu „România”; potrivire la început de cuvânt
+      const word = x => (" " + norm(x).replace(/[^a-z0-9]+/g, " ")).includes(" " + text);
+      const byCity = rows.filter(r => [r.dest_name, r.dest, alias(r.dest_name)].some(word));
+      rows = byCity.length ? byCity : rows.filter(r => [r.country, alias(r.country)].some(word));
+    }
     // o singură variantă pe destinație: cea mai ieftină
     const best = new Map();
     for (const r of rows) { // același oraș cu 2 coduri (ex. Baku GYD/BAK) = o singură destinație
-      const k = norm(r.dest_name) + "|" + norm(r.country), c = best.get(k);
+      const k = CITY_OF[r.dest] || norm(r.dest_name) + "|" + norm(r.country), c = best.get(k);
       if (!c || r.price_eur < c.price_eur) best.set(k, r);
     }
     H.rows = [...best.values()].sort((a, b) => a.price_eur - b.price_eur)
@@ -149,7 +164,7 @@
         </div>
         <form class="hero-box" id="hero-form" autocomplete="off">
           ${field("h-from", "De unde", "🛫", `<select id="h-from"><option value="ALL">Oricare</option>${origins.map(c => `<option value="${c}"${sel(c, H.from)}>${esc(ORIGIN_NAMES[c])}</option>`).join("")}</select>`)}
-          ${field("h-text", "Unde", "📍", `<input id="h-text" type="text" placeholder="${esc((IDEAS.find(i => i[0] === H.where) || IDEAS[0])[2])} – sau scrie o țară, un oraș" value="${esc(H.text)}">`)}
+          ${field("h-text", "Unde", "📍", `<input id="h-text" type="text" placeholder="${esc((IDEAS.find(i => i[0] === H.where) || IDEAS[0])[2])} sau o țară, un oraș" value="${esc(H.text)}">`)}
           ${field("h-when", "Când", "📅", `<select id="h-when"><option value="">Oricând</option><option value="weekend"${sel("weekend", H.when)}>Weekendul acesta</option>${months().map(([v, l]) => `<option value="${v}"${sel(v, H.when)}>${l}</option>`).join("")}</select>`)}
           ${field("h-budget", "Buget / pers.", "💶", `<select id="h-budget">${BUDGETS.map(b => `<option value="${b}"${sel(b, H.budget)}>${b ? "sub " + b + " €" : "Oricât"}</option>`).join("")}</select>`)}
           ${field("h-pax", "Persoane", "👥", `<select id="h-pax">${paxOptions()}</select>`)}

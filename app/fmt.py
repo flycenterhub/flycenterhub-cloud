@@ -31,7 +31,8 @@ COUNTRIES_RO = {
 
 
 def country_ro(name):
-    return COUNTRIES_RO.get(name or "", name or "")
+    from .names_ro import COUNTRY
+    return COUNTRIES_RO.get(name or "") or COUNTRY.get(name or "", name or "")
 
 
 def date_ro(iso, with_day=True):
