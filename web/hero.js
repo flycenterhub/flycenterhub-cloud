@@ -109,7 +109,9 @@
     });
     if (text) { // „Roma” = orașul Roma, nu „România”; potrivire la început de cuvânt
       const word = x => (" " + norm(x).replace(/[^a-z0-9]+/g, " ")).includes(" " + text);
-      const byCity = rows.filter(r => [r.dest_name, r.dest, alias(r.dest_name)].some(word));
+      const whole = x => (" " + norm(x).replace(/[^a-z0-9]+/g, " ") + " ").includes(" " + text + " ");
+      const exact = rows.filter(r => [r.dest_name, r.dest, alias(r.dest_name)].some(whole)); // „Roma” = Roma, nu „La Romana”
+      const byCity = exact.length ? exact : rows.filter(r => [r.dest_name, r.dest, alias(r.dest_name)].some(word));
       rows = byCity.length ? byCity : rows.filter(r => [r.country, alias(r.country)].some(word));
     }
     // o singură variantă pe destinație: cea mai ieftină
