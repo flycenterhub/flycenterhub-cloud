@@ -772,8 +772,25 @@ button.btn.book{font:inherit;cursor:pointer}
 /* încredere: „Nu vindem bilete” + subsol */
 .trust { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; margin: 10px 0 4px; }
 .trust a { color: var(--accent); white-space: nowrap; }
-.site-foot { font-size: 12.5px; color: var(--text-2); border-top: 1px solid var(--border); margin-top: 28px; padding-top: 14px; padding-bottom: 28px; }
-.site-foot p { margin: 4px 0; }
+.site-foot { margin-top: 34px; padding-bottom: 30px; color: var(--text-2); }
+.sf-grid { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 14px; }
+.sf-box { background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); border-radius: 18px; padding: 16px 18px; }
+.sf-box h3 { margin: 0 0 10px; font: 500 11px "Outfit", system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.sf-nums { display: flex; gap: 18px; }
+.sf-nums div { display: flex; flex-direction: column; }
+.sf-nums b { font: 400 30px/1.1 "Fraunces", Georgia, serif; color: var(--text); }
+.sf-nums span { font-size: 12.5px; }
+.sf-cheap { margin: 10px 0 0; font-size: 14px; }
+.sf-cheap b { color: var(--text); }
+.sf-tip p { margin: 0; font: 300 16px/1.45 "Fraunces", Georgia, serif; color: var(--text); min-height: 70px; }
+.sf-next { margin-top: 10px; border: 0; background: none; padding: 0; color: var(--accent); font: 500 13.5px "Outfit", system-ui, sans-serif; cursor: pointer; }
+.sf-how ol { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; }
+.sf-how li + li { margin-top: 5px; }
+.sf-how b { color: var(--text); font-weight: 600; }
+.sf-legal { margin: 14px 2px 0; font-size: 11.5px; color: var(--muted); }
+.sf-legal a { color: inherit; }
+@media (max-width: 860px) { .sf-grid { grid-template-columns: 1fr; } }
 
 /* Fundal de vacanță în surdină (doar modul luminos): turcoaz deschis sus, nisip cald jos.
    Pentru alb simplu, șterge blocul acesta. */

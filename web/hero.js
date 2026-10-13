@@ -334,6 +334,36 @@
     if (e.target.closest("#hero-close")) { H.rows = null; render(); }
   });
 
+  // ---------- subsolul: cifre live + sfaturi de călătorie ----------
+  const TIPS = [
+    "Bagajul mic de sub scaun e inclus la Wizz Air și Ryanair; trollerul de cabină se plătește separat.",
+    "La Ryanair, check-in-ul online e gratuit; la aeroport te costă o taxă.",
+    "Cardul european de sănătate (CEAM) e gratuit de la CNAS și te acoperă în UE pentru urgențe.",
+    "Pentru Asia, Africa sau America, pașaportul trebuie de regulă să fie valabil încă 6 luni de la intrare.",
+    "În UE poți călători doar cu buletinul, dar pentru Marea Britanie îți trebuie pașaport.",
+    "Prețurile low-cost cresc de obicei pe măsură ce se umplu avioanele: o ofertă bună azi poate dispărea mâine.",
+    "Zborurile cu plecare dimineața devreme sau seara târziu sunt adesea mai ieftine.",
+    "Pentru SUA, românii au nevoie de viză: programul Visa Waiver e suspendat pentru România.",
+    "Pentru Thailanda, Maldive sau Mauritius, românii nu au nevoie de viză în avans la sejururi scurte (verifică totuși pe mae.ro înainte).",
+    "Dus-întors cu două companii diferite iese uneori mai ieftin decât cu aceeași companie.",
+    "Plătește în moneda companiei aeriene (de obicei euro), nu cu conversia oferită de site, ca să eviți comisioanele.",
+    "Fă o poză pașaportului și buletinului și păstreaz-o în telefon sau pe email: ajută mult dacă le pierzi.",
+  ];
+  let tipI = Math.floor(Math.random() * TIPS.length);
+  function footer() {
+    const t = $("#sf-tip"); if (t) t.textContent = TIPS[tipI % TIPS.length];
+    api("/api/deals").then(rows => {
+      if (!Array.isArray(rows) || !rows.length || !$("#sf-nums")) return;
+      const dests = new Set(rows.map(r => r.dest)), ctr = new Set(rows.map(r => r.country).filter(Boolean));
+      const fmt = n => n.toLocaleString("ro-RO");
+      $("#sf-nums").innerHTML = `<div><b>${fmt(rows.length)}</b><span>oferte găsite</span></div><div><b>${fmt(dests.size)}</b><span>destinații</span></div><div><b>${fmt(ctr.size)}</b><span>țări</span></div>`;
+      const c = rows.filter(r => r.days_to_dep >= 1).sort((a, b) => a.price_eur - b.price_eur)[0];
+      if (c) $("#sf-cheap").innerHTML = `Cel mai ieftin zbor acum: <b>${esc(c.origin_name)} → ${esc(c.dest_name)}</b> cu <b>${Math.round(c.price_eur)} €</b> ${c.trip === "RT" ? "dus-întors" : "doar dus"}.`;
+    }).catch(() => {});
+  }
+  document.addEventListener("click", e => { if (e.target.closest("#sf-next")) { tipI++; $("#sf-tip").textContent = TIPS[tipI % TIPS.length]; } });
+  footer();
+
   // prima afișare, după ce aplicația a încărcat orașele (status)
   const start = () => {
     if (!state.status) return setTimeout(start, 300);
