@@ -5,7 +5,7 @@
   box-shadow: 0 18px 50px -18px rgba(5, 40, 70, .55);
 }
 /* Poza stă doar pe zona de sus (nu și pe rezultate), ca să nu se mărească și să se pixeleze când apar rezultatele.
-   Anse Volbert, Praslin, Seychelles – Wikimedia Commons, NorbertNagel, CC BY-SA 4.0 (credit în colț) */
+   hero-bg.jpg = Maldive, Unsplash (fără credit obligatoriu) */
 .hero-in {
   position: relative; z-index: 1; padding: 30px 28px 26px; min-height: 470px; display: flex; flex-direction: column;
   background: linear-gradient(180deg, rgba(4, 28, 52, .38) 0%, rgba(4, 28, 52, .08) 38%, rgba(4, 28, 52, 0) 60%, rgba(4, 28, 52, .25) 100%),
