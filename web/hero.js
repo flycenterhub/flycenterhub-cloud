@@ -94,6 +94,20 @@
     return `${idea === "Oriunde" ? "Oriunde" : idea} ${when}, ${from}${H.budget ? `, sub ${H.budget} €` : ""}`;
   }
 
+  // combinații uzuale; dacă ai ales altceva din „👤” de jos, apare și aceea
+  const PAX = [[1,0,0],[2,0,0],[3,0,0],[4,0,0],[5,0,0],[6,0,0],[1,1,0],[1,2,0],[2,1,0],[2,2,0],[2,3,0],[2,0,1],[2,1,1],[2,2,1],[3,1,0],[4,2,0]];
+  function paxText([a, c, i]) {
+    const p = [`${a} ${a === 1 ? "adult" : "adulți"}`];
+    if (c) p.push(`${c} ${c === 1 ? "copil" : "copii"}`);
+    if (i) p.push(`${i} ${i === 1 ? "bebeluș" : "bebeluși"}`);
+    return p.join(" + ");
+  }
+  function paxOptions() {
+    const cur = [state.adults || 1, state.children || 0, state.infants || 0], key = cur.join("-");
+    const list = PAX.some(p => p.join("-") === key) ? PAX : [...PAX, cur];
+    return list.map(p => `<option value="${p.join("-")}"${p.join("-") === key ? " selected" : ""}>${paxText(p)}</option>`).join("");
+  }
+
   function field(id, label, icon, control) {
     return `<label class="hf" for="${id}"><span class="hf-l">${label}</span><span class="hf-v"><span class="hf-i" aria-hidden="true">${icon}</span>${control}</span></label>`;
   }
@@ -113,6 +127,7 @@
           ${field("h-text", "Unde", "📍", `<input id="h-text" type="text" placeholder="${esc((IDEAS.find(i => i[0] === H.where) || IDEAS[0])[2])} – sau scrie o țară, un oraș" value="${esc(H.text)}">`)}
           ${field("h-when", "Când", "📅", `<select id="h-when"><option value="">Oricând</option><option value="weekend"${sel("weekend", H.when)}>Weekendul acesta</option>${months().map(([v, l]) => `<option value="${v}"${sel(v, H.when)}>${l}</option>`).join("")}</select>`)}
           ${field("h-budget", "Buget / pers.", "💶", `<select id="h-budget">${BUDGETS.map(b => `<option value="${b}"${sel(b, H.budget)}>${b ? "sub " + b + " €" : "Oricât"}</option>`).join("")}</select>`)}
+          ${field("h-pax", "Persoane", "👥", `<select id="h-pax">${paxOptions()}</select>`)}
           <button class="hero-go" type="submit"><span>Caută zboruri</span> <span aria-hidden="true">→</span></button>
         </form>
         <div class="hero-row">
@@ -198,6 +213,15 @@
     H.text = $("#h-text").value.trim();
   }
 
+  document.addEventListener("change", e => {
+    if (e.target.id !== "h-pax") return;
+    const [a, c, i] = e.target.value.split("-").map(Number);
+    readForm(); state.adults = a; state.children = c; state.infants = i;
+    setPax("adults", 0); // salvează, actualizează „👤” de jos și restul paginii (+ căutarea de sus, prin înlocuirea de mai jos)
+  });
+  // și când schimbi persoanele din „👤” de jos, căutarea de sus se actualizează
+  const setPaxApp = window.setPax;
+  window.setPax = (k, d) => { setPaxApp(k, d); if ($("#hero")) render(); };
   document.addEventListener("submit", e => {
     if (e.target.id !== "hero-form") return;
     e.preventDefault(); readForm(); run();
