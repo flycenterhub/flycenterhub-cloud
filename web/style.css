@@ -840,3 +840,16 @@ button.btn.book{font:inherit;cursor:pointer}
 }
 
 @media (max-width: 560px) { :root:not([data-theme="dark"]) body::before { background-image: url("hero-bg-1280.jpg"); } }
+
+/* harta: butoane de mărire și indiciu */
+.map-wrap { position: relative; }
+#map-svg { cursor: grab; touch-action: pan-y; }
+#map-svg:active { cursor: grabbing; }
+.map-zoom { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 4px; z-index: 2; }
+.map-zoom button { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  font: 600 18px/1 system-ui, sans-serif; cursor: pointer; box-shadow: var(--shadow); }
+.map-zoom button:hover { background: var(--surface-2); }
+.map-hint { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); background: rgba(16, 36, 44, .72); color: #fff; font-size: 12px;
+  padding: 5px 12px; border-radius: 999px; pointer-events: none; transition: opacity .4s; white-space: nowrap; }
+.map-hint.gone { opacity: 0; }
+@media (max-width: 560px) { .map-hint { font-size: 11px; white-space: normal; text-align: center; width: 80%; } }

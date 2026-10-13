@@ -1226,6 +1226,8 @@ async function renderMap() {
         <span class="map-count" id="map-count"></span>
       </div>
       <div class="map-wrap"><svg id="map-svg" viewBox="0 0 960 560" role="img" aria-label="Harta cu prețurile zborurilor"></svg><div class="map-tip" id="map-tip" hidden></div>
+        <div class="map-zoom" role="group" aria-label="Mărire hartă"><button type="button" data-mz="in" aria-label="Mărește">+</button><button type="button" data-mz="out" aria-label="Micșorează">−</button><button type="button" data-mz="reset" aria-label="Toată harta" title="Toată harta">⟲</button></div>
+        <div class="map-hint" id="map-hint">Rotița mouse-ului sau două degete = mărești · tragi = muți harta</div>
         <div class="map-loading" id="map-loading">Se încarcă harta…</div></div>
       <div class="map-legend" id="map-legend"></div>
       <div class="map-top" id="map-top"></div>`;
@@ -1233,9 +1235,15 @@ async function renderMap() {
       const b = e.target.closest("[data-mreg]"); if (!b) return;
       MAP.region = b.dataset.mreg; MAP.max = null;
       el.querySelectorAll("[data-mreg]").forEach(x => x.classList.toggle("on", x === b));
-      drawMap();
+      MAP.t = null; drawMap();
     });
     $("#map-max").addEventListener("input", e => { MAP.max = +e.target.value; drawMap(false); });
+    el.querySelector(".map-zoom").addEventListener("click", e => {
+      const b = e.target.closest("[data-mz]"); if (!b || !MAP.zoom) return;
+      const svgS = d3.select("#map-svg").transition().duration(350);
+      if (b.dataset.mz === "reset") svgS.call(MAP.zoom.transform, d3.zoomIdentity);
+      else svgS.call(MAP.zoom.scaleBy, b.dataset.mz === "in" ? 1.8 : 1 / 1.8);
+    });
   }
   try { await mapLibs(); } catch (e) { $("#map-loading").textContent = "Harta nu s-a putut încărca. Verifică conexiunea la internet."; return; }
   $("#map-loading").hidden = true;
@@ -1267,9 +1275,18 @@ function drawMap(full = true) {
   const path = d3.geoPath(proj);
   if (full || svg.select(".m-land").empty()) {
     svg.selectAll("*").remove();
-    svg.append("g").attr("class", "m-land").selectAll("path").data(MAP.world.features).join("path").attr("d", path)
+    const zg = svg.append("g").attr("class", "m-zoom");
+    zg.append("g").attr("class", "m-land").selectAll("path").data(MAP.world.features).join("path").attr("d", path)
       .attr("fill", dark ? "#2a2a28" : "#ecebe6").attr("stroke", dark ? "#3d3d3a" : "#ffffff").attr("stroke-width", .6);
-    svg.append("g").attr("class", "m-arcs"); svg.append("g").attr("class", "m-pins"); svg.append("g").attr("class", "m-origins");
+    zg.append("g").attr("class", "m-arcs"); zg.append("g").attr("class", "m-pins"); zg.append("g").attr("class", "m-origins");
+    // mărire / micșorare: rotița, două degete, butoanele +/−; tragi ca să muți harta
+    MAP.zoom = d3.zoom().scaleExtent([1, 14]).translateExtent([[0, 0], [960, 560]])
+      .filter(ev => ev.type === "wheel" ? true : ev.type.startsWith("touch") ? (ev.touches?.length > 1 || (MAP.t?.k || 1) > 1) : !ev.button)
+      .on("zoom", ev => { MAP.t = ev.transform; mapScale(); mapTouch(); $("#map-hint")?.classList.add("gone"); })
+      .on("end", () => mapLabels());
+    svg.call(MAP.zoom).on("dblclick.zoom", null);
+    mapTouch();
+    if (MAP.t) svg.call(MAP.zoom.transform, MAP.t);
   }
   const origins = [...new Set(rows.map(r => r.best.origin))].filter(o => MAP.coords[o]);
   const oxy = o => proj(MAP.coords[o]);
@@ -1277,14 +1294,7 @@ function drawMap(full = true) {
     return `M${x0},${y0}Q${(x0 + x) / 2},${(y0 + y) / 2 - Math.hypot(x - x0, y - y0) * .2} ${x},${y}`; };
   svg.select(".m-arcs").selectAll("path").data(rows, r => r.dest).join("path").attr("d", arc)
     .attr("fill", "none").attr("stroke", r => tone(r.best.min_eur)).attr("stroke-width", 1).attr("opacity", .28);
-  // etichete doar pentru cele mai ieftine, fără să se suprapună (cel mai ieftin are prioritate)
-  const cheapest = new Set(), placed = [];
-  for (const r of [...rows].sort((a, b) => a.best.min_eur - b.best.min_eur)) {
-    if (cheapest.size >= (eu ? 12 : 10)) break;
-    const [x, y] = proj(r.xy), w = 7 * (r.dest_name.length + 7);
-    if (placed.some(p => x < p.x + p.w && x + w > p.x && Math.abs(y - p.y) < 16)) continue;
-    placed.push({ x, y, w }); cheapest.add(r.dest);
-  }
+  MAP.proj = proj; MAP.rows = rows; MAP.eu = eu;
   const pins = svg.select(".m-pins").selectAll("g.pin").data(rows, r => r.dest).join(enter => {
     const g = enter.append("g").attr("class", "pin");
     g.append("circle").attr("class", "hit").attr("r", 12).attr("fill", "transparent");
@@ -1292,14 +1302,14 @@ function drawMap(full = true) {
     g.append("text").attr("x", 9).attr("y", 4);
     return g;
   });
-  pins.attr("transform", r => `translate(${proj(r.xy)})`).attr("data-route", r => `${r.best.origin}|${r.dest}|${r.tripKey}`);
+  pins.attr("data-route", r => `${r.best.origin}|${r.dest}|${r.tripKey}`);
   pins.select(".dot").attr("fill", r => tone(r.best.min_eur)).attr("stroke", dark ? "#1a1a19" : "#fff");
-  pins.select("text").text(r => cheapest.has(r.dest) ? `${r.dest_name.replace(/ \(.*\)$/, "")} ${eur(r.best.min_eur)}` : "")
-    .attr("fill", dark ? "#f1efe8" : "#2c2c2a").attr("stroke", dark ? "#1a1a19" : "#fff");
+  pins.select("text").attr("fill", dark ? "#f1efe8" : "#2c2c2a").attr("stroke", dark ? "#1a1a19" : "#fff");
   const og = svg.select(".m-origins").selectAll("g").data(origins, o => o).join(enter => {
     const g = enter.append("g"); g.append("circle").attr("r", 7.5).attr("fill", "#D85A30").attr("stroke-width", 2.5);
     g.append("text").attr("x", 11).attr("y", 4).attr("class", "o"); return g; });
-  og.attr("transform", o => `translate(${oxy(o)})`);
+  MAP.oxy = oxy;
+  mapScale(); mapLabels();
   og.select("circle").attr("stroke", dark ? "#1a1a19" : "#fff");
   og.select("text").text(o => origins.length <= 2 ? (ORIGIN_NAMES[o] || o) : "").attr("fill", dark ? "#F0997B" : "#993C1D").attr("stroke", dark ? "#1a1a19" : "#fff");
   const tip = $("#map-tip"), wrap = $("#tab-map .map-wrap");
@@ -1317,6 +1327,34 @@ function drawMap(full = true) {
   $("#map-top").innerHTML = top.length ? `<div class="map-top-t">Cele mai ieftine pe hartă</div><div class="map-chips">${top.map(r =>
     `<button class="map-chip" data-route="${r.best.origin}|${r.dest}|${r.tripKey}"><b>${esc(r.dest_name.replace(/ \(.*\)$/, ""))}</b><span>${eur(r.best.min_eur)}</span><small>din ${esc(ORIGIN_NAMES[r.best.origin] || r.best.origin)}</small></button>`).join("")}</div>`
     : `<div class="empty">Nicio destinație sub acest buget.</div>`;
+}
+// pe telefon: cu un deget derulezi pagina; harta se mișcă cu un deget doar după ce ai mărit-o
+function mapTouch() { d3.select("#map-svg").style("touch-action", (MAP.t?.k || 1) > 1.01 ? "none" : "pan-y"); }
+// la mărire: punctele și textele rămân de aceeași mărime pe ecran, liniile la fel de subțiri
+function mapScale() {
+  const svg = d3.select("#map-svg"), k = MAP.t?.k || 1;
+  if (svg.empty() || !MAP.proj) return;
+  svg.select(".m-zoom").attr("transform", MAP.t || null);
+  svg.select(".m-land").selectAll("path").attr("stroke-width", .6 / k);
+  svg.select(".m-arcs").selectAll("path").attr("stroke-width", 1 / k);
+  svg.select(".m-pins").selectAll("g.pin").attr("transform", r => `translate(${MAP.proj(r.xy)}) scale(${1 / k})`);
+  svg.select(".m-origins").selectAll("g").attr("transform", o => `translate(${MAP.oxy(o)}) scale(${1 / k})`);
+}
+// etichete cu preț pentru cele mai ieftine, fără suprapuneri; cu cât mărești, cu atât apar mai multe
+function mapLabels() {
+  const svg = d3.select("#map-svg"), t = MAP.t || d3.zoomIdentity, k = t.k;
+  if (svg.empty() || !MAP.rows) return;
+  const lim = Math.min(80, Math.round((MAP.eu ? 12 : 10) * Math.sqrt(k) * (k > 1 ? 1.6 : 1)));
+  const show = new Set(), placed = [];
+  for (const r of [...MAP.rows].sort((a, b) => a.best.min_eur - b.best.min_eur)) {
+    if (show.size >= lim) break;
+    const [x, y] = t.apply(MAP.proj(r.xy)), w = 7 * (r.dest_name.length + 7);
+    if (x < 0 || y < 0 || x > 960 || y > 560) continue; // doar ce se vede
+    if (placed.some(p => x < p.x + p.w && x + w > p.x && Math.abs(y - p.y) < 16)) continue;
+    placed.push({ x, y, w }); show.add(r.dest);
+  }
+  svg.select(".m-pins").selectAll("g.pin").select("text")
+    .text(r => show.has(r.dest) ? `${r.dest_name.replace(/ \(.*\)$/, "")} ${eur(r.best.min_eur)}` : "");
 }
 /* ---------- escale făcute de tine: două bilete low-cost separate, prin hub-urile Ryanair ---------- */
 let ESC = null, escP = null;
