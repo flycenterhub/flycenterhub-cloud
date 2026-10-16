@@ -53,8 +53,15 @@
       .map(d => [`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, `${MONTHS_FULL[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? " " + d.getFullYear() : ""}`]);
   }
   // fereastra de plecare / întoarcere pentru „Când”
+  const MON3 = ["ian", "feb", "mar", "apr", "mai", "iun", "iul", "aug", "sep", "oct", "nov", "dec"];
+  const dShort = d => d ? `${+d.slice(8, 10)} ${MON3[+d.slice(5, 7) - 1]}` : "";
+  // date fixe: „fix:2026-11-12:2026-11-19” (întoarcerea poate lipsi = doar dus)
+  const fixed = when => /^fix:/.test(when || "") ? { dep: when.slice(4, 14), ret: when.slice(15, 25) } : null;
+  const fixedLabel = when => { const f = fixed(when); return f ? (f.ret ? `${dShort(f.dep)} → ${dShort(f.ret)}` : `${dShort(f.dep)} · doar dus`) : ""; };
   function window_(when) {
     if (!when) return null;
+    const f = fixed(when);
+    if (f) return { dep: [f.dep, f.dep], ret: f.ret ? [f.ret, f.ret] : [f.dep, addDays(f.dep, 60)], exact: true };
     if (when === "weekend") {
       const d = new Date(), day = d.getDay(), toFri = (5 - day + 7) % 7;
       const fri = iso(new Date(d.getFullYear(), d.getMonth(), d.getDate() + (day === 6 || day === 0 ? 0 : toFri)));
@@ -90,7 +97,7 @@
     ]);
     let rows = [...(rows0 || []), ...((ex && ex.fares) || [])];
     const reg = await regionsMap(), text = norm(H.text);
-    const maxNights = H.when === "weekend" ? 4 : 28;
+    const maxNights = H.when === "weekend" ? 4 : fixed(H.when) ? 90 : 28;
     rows = rows.filter(r => {
       if (r.trip !== H.trip) return false;
       if (!text && (NOVAC.has(r.dest) || !r.dest_name || r.dest_name === r.dest)) return false; // nu le propunem la idei, dar se găsesc dacă le scrii
@@ -98,6 +105,7 @@
       if (H.budget && r.price_eur > H.budget) return false;
       if (!(r.days_to_dep >= 1)) return false;
       if (w && r.trip === "RT" && r.ret_date > w.ret[1]) return false;
+      if (w?.exact && (r.dep_date !== w.dep[0] || (r.trip === "RT" && r.ret_date !== w.ret[0]))) return false; // exact zilele alese
       if (r.trip === "RT" && r.nights != null && (r.nights < 2 || r.nights > maxNights)) return false;
       const region = reg.by[r.dest];
       if (text) return true; // filtrat mai jos: întâi după oraș, apoi după țară
@@ -131,7 +139,7 @@
 
   function summary() {
     const idea = H.text ? H.text : (IDEAS.find(i => i[0] === H.where) || [])[2];
-    const when = !H.when ? "oricând" : H.when === "weekend" ? "weekendul acesta" : "în " + (months().find(m => m[0] === H.when) || [, ""])[1].toLowerCase();
+    const when = !H.when ? "oricând" : H.when === "weekend" ? "weekendul acesta" : fixed(H.when) ? "pe " + fixedLabel(H.when) : "în " + (months().find(m => m[0] === H.when) || [, ""])[1].toLowerCase();
     const from = H.from === "ALL" ? "din orice oraș" : "din " + ORIGIN_NAMES[H.from];
     return `${idea === "Oriunde" ? "Oriunde" : idea} ${when}, ${from}${H.budget ? `, sub ${H.budget} €` : ""}`;
   }
@@ -167,7 +175,7 @@
         <form class="hero-box" id="hero-form" autocomplete="off">
           ${field("h-from", "De unde", "🛫", `<select id="h-from"><option value="ALL">Oricare</option>${origins.map(c => `<option value="${c}"${sel(c, H.from)}>${esc(ORIGIN_NAMES[c])}</option>`).join("")}</select>`)}
           ${field("h-text", "Unde", "📍", `<input id="h-text" type="text" placeholder="${esc((IDEAS.find(i => i[0] === H.where) || IDEAS[0])[2])} sau o țară, un oraș" value="${esc(H.text)}">`)}
-          ${field("h-when", "Când", "📅", `<select id="h-when"><option value="">Oricând</option><option value="weekend"${sel("weekend", H.when)}>Weekendul acesta</option>${months().map(([v, l]) => `<option value="${v}"${sel(v, H.when)}>${l}</option>`).join("")}</select>`)}
+          ${field("h-when", "Când", "📅", `<select id="h-when"><option value="">Oricând</option><option value="weekend"${sel("weekend", H.when)}>Weekendul acesta</option>${fixed(H.when) ? `<option value="${H.when}" selected>📅 ${fixedLabel(H.when)}</option>` : ""}<option value="pick">📅 Alege datele exacte…</option>${months().map(([v, l]) => `<option value="${v}"${sel(v, H.when)}>${l}</option>`).join("")}</select>`)}
           ${field("h-budget", "Buget / pers.", "💶", `<select id="h-budget">${BUDGETS.map(b => `<option value="${b}"${sel(b, H.budget)}>${b ? "sub " + b + " €" : "Oricât"}</option>`).join("")}</select>`)}
           ${field("h-pax", "Persoane", "👥", `<select id="h-pax">${paxOptions()}</select>`)}
           <button class="hero-go" type="submit"><span>Caută zboruri</span> <span aria-hidden="true">→</span></button>
@@ -274,6 +282,7 @@
   });
   document.addEventListener("keydown", e => {
     if (!DD) return;
+    if (DD.menu.classList.contains("hdp")) { if (e.key === "Escape") ddClose(); return; } // în fereastra de date: tastele normale
     const opts = [...DD.menu.querySelectorAll(".hdd-o")], i = opts.indexOf(document.activeElement);
     if (e.key === "Escape") { const b = DD.btn; ddClose(); b?.focus(); e.preventDefault(); }
     else if (e.key === "ArrowDown") { opts[Math.min(i + 1, opts.length - 1)]?.focus(); e.preventDefault(); }
@@ -331,6 +340,48 @@
     H.text = $("#h-text").value.trim();
   }
 
+  // „Alege datele exacte…”: fereastră cu plecare + întoarcere (calendarul telefonului/browserului)
+  function datePanel() {
+    const field = $("#h-when")?.closest(".hf"); if (!field) return;
+    ddClose();
+    const f = fixed(H.when) || {}, today = iso(new Date()), max = addDays(today, 30 * ((state.status?.settings?.exotic?.months_ahead ?? 8)));
+    const sheet = innerWidth <= 560, menu = document.createElement("div");
+    menu.className = "hdd hdp" + (sheet ? " sheet" : "");
+    menu.innerHTML = `<div class="hdd-h">Date fixe</div>
+      <label class="hdp-f"><span>🛫 Plecare</span><input type="date" id="hdp-dep" min="${today}" max="${max}" value="${f.dep || ""}"></label>
+      <label class="hdp-f"><span>🛬 Întoarcere <small>(lasă gol pentru doar dus)</small></span><input type="date" id="hdp-ret" min="${f.dep || today}" max="${max}" value="${f.ret || ""}"></label>
+      <p class="hdp-err" id="hdp-err" hidden></p>
+      <div class="hdp-b"><button type="button" class="hdp-cancel" id="hdp-cancel">Renunță</button><button type="button" class="hdp-ok" id="hdp-ok">Caută pe aceste date</button></div>`;
+    let back = null;
+    if (sheet) { back = document.createElement("div"); back.className = "hdd-back"; document.body.append(back); }
+    document.body.append(menu);
+    if (!sheet) {
+      const rc = field.getBoundingClientRect(), w = 300;
+      menu.style.minWidth = w + "px";
+      menu.style.left = Math.max(8, Math.min(rc.left + scrollX, scrollX + innerWidth - w - 8)) + "px";
+      const h = menu.scrollHeight, below = innerHeight - rc.bottom;
+      menu.style.top = (below < h + 16 && rc.top > below ? rc.top + scrollY - h - 8 : rc.bottom + scrollY + 8) + "px";
+    }
+    DD = { sel: $("#h-when"), menu, back, btn: field.querySelector(".hf-btn") };
+    field.classList.add("open");
+    void menu.offsetHeight; menu.classList.add("in"); back?.classList.add("in");
+    const dep = menu.querySelector("#hdp-dep"), ret = menu.querySelector("#hdp-ret"), err = menu.querySelector("#hdp-err");
+    dep.addEventListener("change", () => { ret.min = dep.value || today; if (ret.value && ret.value < dep.value) ret.value = ""; });
+    menu.querySelector("#hdp-cancel").onclick = () => ddClose();
+    menu.querySelector("#hdp-ok").onclick = () => {
+      if (!dep.value) { err.textContent = "Alege data plecării."; err.hidden = false; return; }
+      if (ret.value && ret.value <= dep.value) { err.textContent = "Întoarcerea trebuie să fie după plecare."; err.hidden = false; return; }
+      ddClose();
+      readForm();
+      H.when = `fix:${dep.value}:${ret.value || ""}`;
+      H.trip = ret.value ? "RT" : "OW";
+      run();
+    };
+    setTimeout(() => dep.focus(), 50);
+  }
+  document.addEventListener("change", e => {
+    if (e.target.id === "h-when" && e.target.value === "pick") { e.target.value = H.when; datePanel(); }
+  });
   document.addEventListener("change", e => {
     if (e.target.id !== "h-pax") return;
     const [a, c, i] = e.target.value.split("-").map(Number);

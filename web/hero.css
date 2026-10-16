@@ -153,3 +153,15 @@
 .hdd-back { position: fixed; inset: 0; z-index: 199; background: rgba(5, 25, 40, .35); opacity: 0; transition: opacity .2s; }
 .hdd-back.in { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .hdd, .hdd.sheet, .hdd-back, .hf-chev { transition: none; } }
+
+/* fereastra „date fixe” */
+.hdp { padding: 8px 12px 12px; }
+.hdp-f { display: flex; flex-direction: column; gap: 4px; padding: 6px 2px; font: 500 13px "Outfit", system-ui, sans-serif; color: var(--text-2); }
+.hdp-f small { font-weight: 400; color: var(--muted); }
+.hdp-f input { font: 400 15px "Fraunces", Georgia, serif; color: #1d2a30; border: 1px solid #dfe5e6; border-radius: 11px; padding: 9px 11px; background: #fff; }
+.hdp-f input:focus { outline: 2px solid #ffb59f; border-color: #ff8a6a; }
+.hdp-err { margin: 4px 2px 0; color: #c0392b; font-size: 13px; }
+.hdp-b { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+.hdp-b button { border: 0; border-radius: 11px; padding: 9px 14px; font: 500 14px "Outfit", system-ui, sans-serif; cursor: pointer; }
+.hdp-cancel { background: #eef2f2; color: #33444a; }
+.hdp-ok { background: linear-gradient(135deg, #ff8a4c, #ff5a5f); color: #fff; }
