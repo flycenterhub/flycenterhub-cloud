@@ -175,7 +175,7 @@
         <form class="hero-box" id="hero-form" autocomplete="off">
           ${field("h-from", "De unde", "🛫", `<select id="h-from"><option value="ALL">Oricare</option>${origins.map(c => `<option value="${c}"${sel(c, H.from)}>${esc(ORIGIN_NAMES[c])}</option>`).join("")}</select>`)}
           ${field("h-text", "Unde", "📍", `<input id="h-text" type="text" placeholder="${esc((IDEAS.find(i => i[0] === H.where) || IDEAS[0])[2])} sau o țară, un oraș" value="${esc(H.text)}">`)}
-          ${field("h-when", "Când", "📅", `<select id="h-when"><option value="">Oricând</option><option value="weekend"${sel("weekend", H.when)}>Weekendul acesta</option>${fixed(H.when) ? `<option value="${H.when}" selected>📅 ${fixedLabel(H.when)}</option>` : ""}<option value="pick">📅 Alege datele exacte…</option>${months().map(([v, l]) => `<option value="${v}"${sel(v, H.when)}>${l}</option>`).join("")}</select>`)}
+          ${field("h-when", "Când", "📅", `<select id="h-when"><option value="pick">📅 Alege datele exacte…</option>${fixed(H.when) ? `<option value="${H.when}" selected>📅 ${fixedLabel(H.when)}</option>` : ""}<option value=""${H.when ? "" : " selected"}>Oricând</option><option value="weekend"${sel("weekend", H.when)}>Weekendul acesta</option>${months().map(([v, l]) => `<option value="${v}"${sel(v, H.when)}>${l}</option>`).join("")}</select>`)}
           ${field("h-budget", "Buget / pers.", "💶", `<select id="h-budget">${BUDGETS.map(b => `<option value="${b}"${sel(b, H.budget)}>${b ? "sub " + b + " €" : "Oricât"}</option>`).join("")}</select>`)}
           ${field("h-pax", "Persoane", "👥", `<select id="h-pax">${paxOptions()}</select>`)}
           <button class="hero-go" type="submit"><span>Caută zboruri</span> <span aria-hidden="true">→</span></button>
