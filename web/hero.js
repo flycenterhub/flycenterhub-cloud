@@ -380,7 +380,11 @@
     setTimeout(() => dep.focus(), 50);
   }
   document.addEventListener("change", e => {
-    if (e.target.id === "h-when" && e.target.value === "pick") { e.target.value = H.when; datePanel(); }
+    if (e.target.id === "h-when" && e.target.value === "pick") {
+      e.target.value = H.when;
+      const t = e.target.closest(".hf")?.querySelector(".hf-t"); if (t) t.textContent = e.target.selectedOptions[0]?.text || "Oricând";
+      datePanel();
+    }
   });
   document.addEventListener("change", e => {
     if (e.target.id !== "h-pax") return;
