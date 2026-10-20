@@ -1774,7 +1774,16 @@ function clearDates() {
   $("#f-ret").min = todayIso();
   onDatesChanged();
 }
+/* logo / numele site-ului = pagina principală: căutarea de sus + Oferte, de la început */
+function goHome() {
+  document.querySelectorAll("dialog[open]").forEach(d => d.close());
+  setTab("deals");
+  window.heroReset?.();
+  history.replaceState(null, "", location.pathname);
+  scrollTo({ top: 0, behavior: "smooth" });
+}
 document.addEventListener("click", async e => {
+  if (e.target.closest(".home-link") && !e.ctrlKey && !e.metaKey && !e.shiftKey) { e.preventDefault(); goHome(); return; }
   if (e.target.id === "btn-copy-link") {
     try { await navigator.clipboard.writeText(e.target.dataset.url); e.target.textContent = "Copiat ✓"; }
     catch (err) { prompt("Copiază linkul:", e.target.dataset.url); }

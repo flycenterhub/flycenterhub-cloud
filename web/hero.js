@@ -437,6 +437,13 @@
   document.addEventListener("click", e => { if (e.target.closest("#sf-next")) { tipI++; $("#sf-tip").textContent = TIPS[tipI % TIPS.length]; } });
   footer();
 
+  // pagina principală (click pe logo): căutarea de sus golită, fără rezultate
+  window.heroReset = () => {
+    ddClose();
+    Object.assign(H, { where: "any", text: "", when: "", budget: 0, rows: null, shown: PAGE, busy: false });
+    if ($("#hero")) render();
+  };
+
   // prima afișare, după ce aplicația a încărcat orașele (status)
   const start = () => {
     if (!state.status) return setTimeout(start, 300);

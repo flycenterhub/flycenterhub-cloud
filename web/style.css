@@ -853,3 +853,9 @@ button.btn.book{font:inherit;cursor:pointer}
   padding: 5px 12px; border-radius: 999px; pointer-events: none; transition: opacity .4s; white-space: nowrap; }
 .map-hint.gone { opacity: 0; }
 @media (max-width: 560px) { .map-hint { font-size: 11px; white-space: normal; text-align: center; width: 80%; } }
+
+/* logo și nume = link spre pagina principală */
+.home-link { color: inherit; text-decoration: none; display: inline-flex; align-items: baseline; gap: 8px; }
+a.logo.home-link { display: inline-block; transition: transform .2s; }
+a.logo.home-link:hover { transform: scale(1.05); }
+.brand-name .home-link:hover .script { opacity: .85; }
