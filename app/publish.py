@@ -22,7 +22,7 @@ log = logging.getLogger("publish")
 API = "https://api.github.com"
 SRC = ["ryanair", "wizzair", "aviasales", "google"]
 WEB_FILES = ["style.css", "app.js", "static-api.js", "logo.svg", "hero.js", "hero.css", "hero-bg.jpg", "hero-bg-1280.jpg",
-             "og.jpg", "robots.txt", "sitemap.xml", "404.html"]
+             "og.jpg", "robots.txt", "sitemap.xml", "404.html", "account.js", "account.css"]
 # Autorul commit-urilor (ca să nu apară numele personal în depozit)
 BOT = {"name": "FlyCenterHub", "email": "noreply@flycenterhub.github.io"}
 

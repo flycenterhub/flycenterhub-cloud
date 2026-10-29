@@ -1011,7 +1011,22 @@ function renderHelp() {
   <p>FlyCenterHub este un serviciu gratuit de informare: arată prețuri găsite automat la companii aeriene și agenții. <b>Nu suntem agenție de turism</b>, nu vindem bilete, nu încasăm plăți și nu răspundem pentru rezervările făcute pe alte site-uri. Prețurile, orarele, informațiile despre vize și vreme sunt orientative și se pot schimba oricând; prețul și condițiile valabile sunt cele de pe site-ul unde plătești. Folosind site-ul, ești de acord cu aceste condiții.</p>
   <p><b>Linkuri și comisioane:</b> în prezent nu primim comisioane pentru rezervări. Dacă vom folosi linkuri de afiliere (parteneri care ne plătesc un mic comision când rezervi, fără cost în plus pentru tine), le vom marca clar pe site.</p>
   <h2 id="confidentialitate">🔒 Confidențialitate (GDPR)</h2>
-  <p>Nu cerem cont, nume, email sau date de plată. <b>Nu folosim cookie-uri.</b> Numărăm vizitele anonim cu <a href="https://www.goatcounter.com/help/privacy" target="_blank" rel="noopener">GoatCounter</a> (fără cookie-uri, fără date personale, fără urmărire între site-uri). Favoritele, tema aleasă și numărul de pasageri se păstrează doar în browserul tău (localStorage) și le poți șterge oricând din setările browserului. Când apeși „Rezervă” sau „Compară”, ajungi pe site-ul partenerului, care are propriile reguli de confidențialitate. Pozele sunt încărcate de pe Wikimedia Commons și Unsplash.</p>
+  <p>Respectăm Regulamentul (UE) 2016/679 (GDPR). Pe scurt: <b>site-ul se folosește fără cont, nu cerem date de plată și nu vindem date nimănui.</b></p>
+  <p><b>Contul (opțional):</b> dacă îți faci cont păstrăm emailul, numele ales, parola (doar criptată, nu o vedem) și data acordului, plus opțiunea „oferte pe email”. Datele stau la <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase</a>, pe servere din UE (Frankfurt). Scop: să-ți păstrăm rutele și preferințele și, doar dacă ai bifat, să-ți trimitem oferte. Temei: contractul (art. 6 alin. 1 lit. b) și consimțământul pentru email (lit. a). Le păstrăm cât timp ai cont. Din meniul contului poți oricând să-ți descarci datele, să renunți la emailuri sau să-ți <b>ștergi definitiv contul</b>.</p>
+  <p><b>Ce date prelucrăm:</b> doar statistici anonime de vizită (pagina vizitată, țara, tipul de browser și de ecran, site-ul de unde ai venit), prin <a href="https://www.goatcounter.com/help/privacy" target="_blank" rel="noopener">GoatCounter</a>: fără cookie-uri, fără adresa IP salvată, fără urmărire între site-uri. Scop: să știm ce pagini sunt utile. Temei: interesul legitim (art. 6 alin. 1 lit. f GDPR).</p>
+  <p><b>Servicii externe:</b> la afișarea paginii, browserul tău încarcă fonturi de la Google Fonts și poze de la Wikimedia Commons și Unsplash; aceste servicii văd adresa IP, ca la orice site, conform propriilor politici. Când apeși „Rezervă” sau „Compară”, ajungi pe site-ul partenerului, care are propriile reguli de confidențialitate.</p>
+  <p><b>Drepturile tale:</b> acces, rectificare, ștergere, restricționare, opoziție și portabilitate. Ne poți scrie ${CONTACT_EMAIL ? `la <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>` : "la adresa din secțiunea Contact"} și răspundem în maximum 30 de zile. Poți depune plângere la <a href="https://www.dataprotection.ro" target="_blank" rel="noopener">ANSPDCP</a> (Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal).</p>
+  <h2 id="cookies">🍪 Cookie-uri</h2>
+  <p><b>Nu folosim cookie-uri</b> de reclamă, de urmărire sau de analiză. Site-ul păstrează doar câteva preferințe <b>în browserul tău</b> (localStorage), care nu ne sunt trimise și nu te identifică:</p>
+  <ul>
+    <li><b>theme</b>: tema luminoasă sau întunecată;</li>
+    <li><b>favs1</b>: destinațiile salvate la favorite;</li>
+    <li><b>paxv2</b>: numărul de pasageri;</li>
+    <li><b>tab</b>, <b>sort</b>, <b>escMode</b>, <b>exact2</b>: ultima filă deschisă și filtrele alese;</li>
+    <li><b>cookie-ok</b>: că ai închis mesajul despre cookie-uri;</li>
+    <li><b>sb-…-auth-token</b>: doar dacă intri în cont, ca să rămâi logat.</li>
+  </ul>
+  <p>Sunt strict necesare pentru funcționarea preferințelor, deci nu cer acord (Legea 506/2004, art. 4 alin. 5). Le poți șterge oricând din setările browserului („Șterge datele site-ului”). Dacă vom adăuga vreodată cookie-uri opționale (de exemplu de la parteneri), îți vom cere întâi acordul.</p>
   ${STATIC ? `<p>Sus vezi când au fost actualizate ultima dată prețurile.</p>` : `
   <h2>Notificări Telegram</h2>
   <p>${state.status?.telegram ? "✅ Active." : "Inactive."} Pentru configurare rulează <code>Configurare-Telegram.bat</code> din folderul aplicației.

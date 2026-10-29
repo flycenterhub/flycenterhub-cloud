@@ -1,0 +1,48 @@
+/* Cont utilizator + mesaj cookie-uri (account.js) */
+.acct-btn { background: var(--surface); color: var(--text); border-color: var(--border); font-weight: 500; }
+.acct-btn:hover { background: var(--surface-2); filter: none; }
+.acct-av { width: 22px; height: 22px; border-radius: 50%; background: #0f6e8c; color: #fff; display: inline-grid; place-items: center; font-size: 12px; font-weight: 600; }
+.acct-nm { max-width: 120px; overflow: hidden; text-overflow: clip; }
+
+.acct-back { position: fixed; inset: 0; z-index: 1000; background: rgba(10, 30, 40, .45); backdrop-filter: blur(3px); display: grid; place-items: center; padding: 16px; animation: acct-in .18s ease; }
+@keyframes acct-in { from { opacity: 0; } }
+.acct-box { width: 380px; max-width: 100%; max-height: calc(100vh - 32px); overflow: auto; background: var(--surface); color: var(--text); border-radius: 20px; padding: 22px; box-shadow: 0 20px 50px -20px rgba(8, 50, 70, .5); position: relative; font-family: Outfit, system-ui, sans-serif; }
+.acct-x { position: absolute; right: 10px; top: 8px; border: 0; background: none; color: var(--muted); font-size: 24px; cursor: pointer; padding: 4px 8px; }
+.acct-box h3 { font: 400 22px Fraunces, Georgia, serif; margin: 0 0 4px; }
+.acct-s { color: var(--text-2); font-size: 13.5px; margin: 0 0 16px; }
+.acct-seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+.acct-seg button { border: 0; background: none; padding: 7px; border-radius: 9px; font: 500 14px Outfit, sans-serif; color: var(--text-2); cursor: pointer; }
+.acct-seg .on { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+.acct-g { width: 100%; display: flex; justify-content: center; gap: 10px; align-items: center; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 12px; padding: 10px; font: 500 14.5px Outfit, sans-serif; cursor: pointer; }
+.acct-g b { color: #4285f4; }
+.acct-g:hover { background: var(--surface-2); }
+.acct-or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 14px 0; }
+.acct-or::before, .acct-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.acct-box label { display: block; font-size: 12px; color: var(--text-2); margin: 0 0 12px; font-weight: 500; }
+.acct-box input:not([type=checkbox]) { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; font: 300 15px Fraunces, Georgia, serif; background: var(--surface); color: var(--text); }
+.acct-box input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.acct-box .acct-chk { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; font-size: 12.5px; line-height: 1.4; }
+.acct-chk input { margin-top: 2px; }
+.acct-box a { color: var(--accent); }
+.acct-msg { font-size: 13px; color: #b3261e; min-height: 0; margin: -4px 0 10px; }
+.acct-msg:empty { display: none; }
+.acct-msg.good { color: var(--good-text); }
+.acct-go { width: 100%; border: 0; border-radius: 12px; padding: 11px; background: var(--accent); color: #fff; font: 500 15px Outfit, sans-serif; cursor: pointer; }
+.acct-go:disabled { opacity: .6; }
+.acct-small { font-size: 12.5px; color: var(--text-2); margin-top: 10px; text-align: center; }
+
+.acct-menu { position: absolute; z-index: 1000; width: 260px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 8px; box-shadow: 0 16px 40px -18px rgba(8, 50, 70, .5); font-family: Outfit, system-ui, sans-serif; }
+.acct-who { padding: 8px 12px 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px; font-size: 13px; color: var(--text-2); overflow-wrap: anywhere; }
+.acct-who b { display: block; color: var(--text); font-size: 14.5px; }
+.acct-menu button { display: block; width: 100%; text-align: left; border: 0; background: none; color: var(--text); padding: 9px 12px; border-radius: 10px; font: 14px Outfit, sans-serif; cursor: pointer; }
+.acct-menu button:hover { background: var(--surface-2); }
+.acct-soon { color: var(--muted); font-size: 11px; margin-left: 4px; }
+.acct-menu .acct-red { color: #b3261e; }
+
+.ck-bar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 900; width: min(560px, calc(100% - 32px)); box-sizing: border-box; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px 10px 14px; display: flex; gap: 12px; align-items: center; box-shadow: 0 10px 30px -14px rgba(8, 50, 70, .45); font-size: 13.5px; color: var(--text-2); }
+.ck-bar a { color: var(--accent); }
+.ck-bar .btn { flex: none; }
+@media (max-width: 760px) {
+  .ck-bar { bottom: 76px; } /* deasupra meniului de jos de pe telefon */
+  .acct-nm { max-width: 80px; }
+}
