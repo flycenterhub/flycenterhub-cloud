@@ -1,6 +1,7 @@
 """Motorul: rulează scanările (automat, la interval) și trimite alertele."""
 import datetime as dt
 import logging
+import os
 import threading
 import time
 import traceback
@@ -10,6 +11,19 @@ from .db import DB
 from .fmt import country_ro
 from .regions import region_of
 from .sources import aviasales, feeds, ryanair, wizzair
+
+
+def keep_awake(on):
+    """Windows: cât rulează scanarea, laptopul nu intră singur în somn (altfel scanarea stă ore întregi).
+    Nu împiedică închiderea capacului sau butonul de pornire. Se cere pe firul scanării și se anulează la final."""
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+        ES_CONTINUOUS, ES_SYSTEM_REQUIRED = 0x80000000, 0x00000001
+        ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS | (ES_SYSTEM_REQUIRED if on else 0))
+    except Exception as e:
+        log.warning("Nu am putut ține laptopul treaz: %s", e)
 
 log = logging.getLogger("engine")
 
@@ -81,6 +95,7 @@ class Engine:
         self.scan_kind = "quick" if quick else "partial" if only else "full"
         self.scan_started = time.time()
         scan_id = None
+        keep_awake(True)
         try:
             cfg = self.cfg = config.load()
             fx.refresh()
@@ -177,6 +192,7 @@ class Engine:
                 self.db.finish_scan(scan_id, "error", {"error": str(e)})
             return False
         finally:
+            keep_awake(False)
             self.progress = {}
             self.progress_counts = {}
             self.running = False

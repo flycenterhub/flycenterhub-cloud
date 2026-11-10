@@ -2,7 +2,7 @@
    Până se completează SB_URL/SB_KEY (valori publice din Supabase → Project Settings → API), fereastra arată
    „conturile se deschid în curând”. */
 (() => {
-  const SB_URL = "";  // ex. https://xxxx.supabase.co
+  const SB_URL = "https://qqtxkepxopjsfdtgngwy.supabase.co";  // ex. https://xxxx.supabase.co
   const SB_KEY = "";  // cheia publică „anon” (NU cea „service_role”)
   const LIB = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js";
   const $ = (s, r = document) => r.querySelector(s);
